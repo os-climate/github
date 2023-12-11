@@ -28,7 +28,7 @@ while IFS= read -r REPO ; do
         ERRORS="true"
     fi
 done < "$REPOSITORY_LIST"
-if [ "$ERRORS" == "true" ]; then
+if [ "$ERRORS" = "true" ]; then
     echo "Error: fix repository listing and try again"; exit 1
 fi
 
