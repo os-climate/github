@@ -5,6 +5,7 @@
 
 # Variables
 REPOSITORY_LIST="scripts/repositories.txt"
+INITIAL_DIR=$(pwd)
 
 # Pre-flight checks
 GIT_CMD=$(which git)
@@ -14,10 +15,12 @@ elif [ ! -f "$REPOSITORY_LIST" ]; then
     echo "Error: missing repository list $REPOSITORY_LIST"; exit 1
 fi
 
+echo "Current working directory: $INITIAL_DIR"
 echo "Updating repositories with latest commit on main branch..."
 HASH=$(git log -n 1 main --pretty=format:"%H")
 echo "Last commit: $HASH"
 echo "Parsing repo list: $REPOSITORY_LIST"
-while IFS= read -r REPO < "$REPOSITORY_LIST"; do
+while IFS= read -r REPO ; do
     echo "Processing: $REPO"
-done
+    cd "$REPO"/.github; git checkout main; git pull
+done < "$REPOSITORY_LIST"
