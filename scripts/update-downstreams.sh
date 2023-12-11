@@ -38,4 +38,13 @@ while IFS= read -r REPO ; do
     # Change directory safely
     cd "$REPO" || exit
     git checkout main; git pull
+    # If pre-commit file exists, check if it needs updating
+    if [ -f .pre-commit-config.yaml ] && [ -f .github/.pre-commit-config.yaml ]; then
+        STATUS="$(cmp --silent .pre-commit-config.yaml .github/.pre-commit-config.yaml)"
+        if [ "$STATUS" -ne 0 ]; then
+            echo "Updating .pre-commit-config.yaml from upstream"
+            rm .pre-commit-config.yaml
+            cp .github/.pre-commit-config.yaml .pre-commit-config.yaml
+        fi
+    fi
 done < "$REPOSITORY_LIST"
