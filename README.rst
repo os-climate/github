@@ -6,6 +6,7 @@ This repository shares common GitHub Actions, workflows, linting settings, etc.
 
 It is invoked/updated by a single GitHub workflow, defined in:
 
-    bootstrap.yaml
+.. literalinclude:: workflows/bootstrap.yaml
+   :language: YAML
 
 This runs weekly to ensure OS-Climate repositories always hold the latest content.
