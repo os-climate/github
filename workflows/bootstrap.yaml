@@ -40,7 +40,9 @@ jobs:
           git checkout -b "update-gha-workflows"
           rm -Rf .github
           mv github .github
-          git add .github
+          cp .github/scripts/* scripts
+          cp .github/.pre-commit-config.yaml .pre-commit-config.yaml
+          git add .github scripts/* .pre-commit-config.yaml
           git commit -m "Chore: Pull Github Actions from shared repository"
           git push --set-upstream origin update-gha-workflows
           gh pr create --title "Chore: Update GitHub Actions" --body ''
