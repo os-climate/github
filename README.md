@@ -1,6 +1,6 @@
 # OS-Climate
 
-## Shared DevOps Tooling, including linting tools, GitHub Actions
+## Shared DevOps tooling, including linting tools, GitHub Actions
 
 This repository shares common GitHub Actions, workflows, linting settings, etc.
 
