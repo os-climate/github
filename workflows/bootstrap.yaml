@@ -48,6 +48,7 @@ jobs:
           cp devops/workflows/* .github/workflows/
           cp devops/scripts/* scripts
           cp devops/.pre-commit-config.yaml .pre-commit-config.yaml
+          cp devops/.prettierignore .prettierignore
           git add .github scripts/* .pre-commit-config.yaml
           git commit -m "Chore: Pull DevOps tooling from upstream repository"
           git push --set-upstream origin update-devops-tooling
