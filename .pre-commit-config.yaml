@@ -4,6 +4,7 @@ ci:
   skip:
     # pre-commit.ci cannot install WGET, so tomlint must be disabled
     - tomllint
+    - pre-commit-update
 
 exclude: |
   (?x)^(
@@ -12,6 +13,13 @@ exclude: |
   )$
 
 repos:
+
+  - repo: https://gitlab.com/vojko.pribudic/pre-commit-update
+    rev: v0.1.0
+    hooks:
+      - id: pre-commit-update
+        args: [--dry-run]
+
   - repo: local
     hooks:
       - id: tomllint
@@ -51,11 +59,12 @@ repos:
 
   # Autoformat: YAML, JSON, Markdown, etc.
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.5
+    rev: v3.1.0
     hooks:
       - id: prettier
         args:
-          ["--ignore-unknown", "--no-error-on-unmatched-pattern", "!chart/**"]
+          ["--ignore-unknown", "--no-error-on-unmatched-pattern",
+           --log-level=debug]
 
   # Lint: Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
@@ -110,7 +119,7 @@ repos:
   #     ]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 5.11.5
     hooks:
       - id: isort
 
