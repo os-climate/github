@@ -4,6 +4,7 @@ ci:
   skip:
     # pre-commit.ci cannot install WGET, so tomlint must be disabled
     - tomllint
+    - pre-commit-update
 
 exclude: |
   (?x)^(
