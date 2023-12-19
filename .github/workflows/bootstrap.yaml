@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: "os-climate/devops-toolkit"
-          path: "devops"
+          path: ".devops"
 
       - name: "Update repository workflows and create PR"
         env:
@@ -44,11 +44,11 @@ jobs:
                   mkdir "$FOLDER"
               fi
           done
-          cp devops/dependabot.yml .github/dependabot.yml
-          cp devops/workflows/* .github/workflows/
-          cp devops/scripts/* scripts
-          cp devops/.pre-commit-config.yaml .pre-commit-config.yaml
-          cp devops/.prettierignore .prettierignore
+          cp -R .devops/.github .github
+          cp .devops/scripts/* scripts
+          cp .devops/.pre-commit-config.yaml .pre-commit-config.yaml
+          cp .devops/.prettierignore .prettierignore
+          cp .devops/.gitignore .gitignore
           git add .
           git commit -m "Chore: Update DevOps tooling from central repository"
           git push --set-upstream origin update-devops-tooling
