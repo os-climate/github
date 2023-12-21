@@ -44,7 +44,8 @@ jobs:
                   mkdir "$FOLDER"
               fi
           done
-          cp -R .devops/.github .github
+          cp -R .devops/.github/* .github
+          cp -R .devops/.github/workflows/* .github/workflows
           cp .devops/scripts/* scripts
           cp .devops/.pre-commit-config.yaml .pre-commit-config.yaml
           cp .devops/.prettierignore .prettierignore
