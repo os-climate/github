@@ -4,7 +4,7 @@ ci:
   skip:
     # pre-commit.ci cannot install WGET, so tomlint must be disabled
     - tomllint
-    - pre-commit-update
+    # - pre-commit-update
 
 exclude: |
   (?x)^(
@@ -14,11 +14,11 @@ exclude: |
 
 repos:
 
-  - repo: https://gitlab.com/vojko.pribudic/pre-commit-update
-    rev: v0.1.0
-    hooks:
-      - id: pre-commit-update
-        args: [--dry-run]
+  # - repo: https://gitlab.com/vojko.pribudic/pre-commit-update
+  #   rev: v0.1.0
+  #   hooks:
+  #     - id: pre-commit-update
+  #       args: [--dry-run]
 
   - repo: local
     hooks:
