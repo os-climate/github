@@ -62,7 +62,7 @@ jobs:
           done
           # If no changes required, do not throw an error
           git status
-          if [ $! == "0" ]; then
+          if [ $? -eq 0 ]; then
             echo "No updates/changes to commit"; exit 0
           fi
           git add .
