@@ -50,7 +50,8 @@ jobs:
            "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "update-devops-tooling"
           FOLDERS=".github .github/workflows scripts"
-          FILES=".pre-commit-config.yaml .prettierignore .gitignore"
+          FILES=".pre-commit-config.yaml .prettierignore .gitignore \
+           .requirements-banner.txt"
           for FOLDER in ${FOLDERS}; do
               # If necessary, create target folder
               if [ ! -d "$FOLDER" ]; then
