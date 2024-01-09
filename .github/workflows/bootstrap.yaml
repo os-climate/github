@@ -50,27 +50,26 @@ jobs:
            "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "update-devops-tooling"
           FOLDERS=".github .github/workflows scripts"
-          FILES=".pre-commit-config.yaml .prettierignore .gitignore \
-           .requirements-banner.txt"
+          FILES=".pre-commit-config.yaml .prettierignore .gitignore"
           for FOLDER in ${FOLDERS}; do
-              # If necessary, create target folder
-              if [ ! -d "$FOLDER" ]; then
-                  mkdir "$FOLDER"
-              fi
-              # Update folder contents
-              cp -a .devops/"$FOLDER"/. "$FOLDER"
+            # If necessary, create target folder
+            if [ ! -d "$FOLDER" ]; then
+              mkdir "$FOLDER"
+            fi
+            # Update folder contents
+            cp -a .devops/"$FOLDER"/. "$FOLDER"
           done
           # Copy specified files into repository root
           for FILE in ${FILES}; do
-              cp .devops/"$FILE" "$FILE"
+            cp .devops/"$FILE" "$FILE"
           done
           # If no changes required, do not throw an error
-          git status
-          if [ $? -eq 0 ]; then
+          if (git status); then
             echo "No updates/changes to commit"; exit 0
           fi
           git add .
-          git commit -m "Chore: Update DevOps tooling from central repository"
+          git commit -m \
+            "Chore: Update DevOps tooling from central repository [skip-ci]"
           git push --set-upstream origin update-devops-tooling
           gh pr create --title \
             "Chore: Pull DevOps tooling from upstream repository" \
