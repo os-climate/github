@@ -72,7 +72,7 @@ fi
 CURRENT_DIR=$(pwd)
 if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
     echo "Changing directory to: $REPO_DIR"
-    cd "$REPO_DIR" || echo "Cound not change directory!"; exit 1
+    cd "$REPO_DIR" || echo "Could not change directory!"; exit 1
 fi
 
 echo "Performing renaming/substitution operations on repository"
