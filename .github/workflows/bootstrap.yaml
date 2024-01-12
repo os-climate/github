@@ -42,6 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ### SHELL CODE START ###
           # Define a function to allow selective opt-out of devops tooling
           OPT_OUT=".devops-exclusions"
           perform_operation() {
@@ -112,3 +113,4 @@ jobs:
               "Chore: Pull DevOps tooling from upstream repository" \
               --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
+          ### SHELL CODE END ###
