@@ -33,6 +33,7 @@ jobs:
       - name: "Update repository workflows and create PR"
         env:
           GH_TOKEN: ${{ github.token }}
+        # yamllint disable rule:line-length
         run: |
           ### SHELL CODE START ###
 
@@ -65,7 +66,6 @@ jobs:
             fi
           }
 
-          # Remove update-devops-tooling branch if it exists
           # Remove branch, if it exists: update-devops-tooling
           if (git rev-parse --verify update-devops-tooling > /dev/null); then
             git branch -d update-devops-tooling
@@ -117,12 +117,22 @@ jobs:
             echo "No updates/changes to commit"; exit 0
           else
             git add .
-            git commit -m \
-              "Chore: Update DevOps tooling from central repository [skip-ci]"
-            git push --set-upstream origin update-devops-tooling
-            # ToDo: need to verify if we are running in a GHA
-            gh pr create --title \
-              "Chore: Pull DevOps tooling from upstream repository" \
-              --body 'Automated by a GitHub workflow: bootstrap.yaml'
+            if ! (git commit -m "Chore: Update DevOps tooling from central repository [skip-ci]\n\nCreated by automation"); then
+              echo "Commit failed; deleting local and remote branches, if necessary"
+              git checkout main
+              # Remove branch, if it exists: update-devops-tooling
+              if (git rev-parse --verify update-devops-tooling > /dev/null); then
+                  git branch -d update-devops-tooling
+              elif (git ls-remote origin update-devops-tooling); then
+                  echo "Removing remote branch: update-devops-tooling"
+                  git push origin --delete update-devops-tooling
+              fi
+            else
+              git push --set-upstream origin update-devops-tooling
+              # ToDo: need to verify if we are running in a GHA
+              gh pr create --title \
+                "Chore: Pull DevOps tooling from upstream repository" \
+                --body 'Automated by a GitHub workflow: bootstrap.yaml'
+            fi
           fi
           ### SHELL CODE END ###
