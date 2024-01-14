@@ -18,7 +18,7 @@ for TEST in $(find "$TARGET" -type f -name '*_test.py' | xargs -0); do
     echo "Processing: $TEST"
     FILE_PATH=$(dirname "$TEST")
     FILE_NAME=$(basename "$TEST")
-    STRIPPED="${FILE_NAME//_test.py/.py/}"
+    STRIPPED="${FILE_NAME//_test.py/.py}"
     echo "  git mv \"${TEST}\" $FILE_PATH/test_\"${STRIPPED%%}\""
     git mv "${TEST}" "$FILE_PATH"/test_"${STRIPPED%%}"
 done
