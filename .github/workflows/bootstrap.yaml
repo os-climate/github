@@ -33,6 +33,7 @@ jobs:
       - name: "Update repository workflows and create PR"
         env:
           GH_TOKEN: ${{ github.token }}
+        # yamllint disable rule:line-length
         run: |
           ### SHELL CODE START ###
 
@@ -116,9 +117,8 @@ jobs:
             echo "No updates/changes to commit"; exit 0
           else
             git add .
-            if ! (git commit -m \
-              "Chore: Update DevOps tooling from central repository [skip-ci]\n\nCreated by automation"); then
-              echo "Commit failed; deleting local and remote branches"
+            if ! (git commit -m "Chore: Update DevOps tooling from central repository [skip-ci]\n\nCreated by automation"); then
+              echo "Commit failed; deleting local and remote branches, if necessary"
               git checkout main
               # Remove branch, if it exists: update-devops-tooling
               if (git rev-parse --verify update-devops-tooling > /dev/null); then
