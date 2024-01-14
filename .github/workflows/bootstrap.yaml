@@ -65,12 +65,15 @@ jobs:
           # Remove update-devops-tooling branch if it exists
           git branch -d update-devops-tooling || true
           git push origin --delete update-devops-tooling || true
+          git checkout -b "update-devops-tooling"
 
           # Configure GIT
-          git config user.name "github-actions[bot]"
-          git config user.email \
-           "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "update-devops-tooling"
+          TEST=$(git config -l)
+          if [ -n "$TEST" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email \
+              "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
 
           FOLDERS=".github .github/workflows scripts"
           for FOLDER in ${FOLDERS}; do
