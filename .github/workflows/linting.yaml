@@ -32,22 +32,24 @@ jobs:
           pip install --upgrade pip
           pip install pre-commit mypy
 
+      - name: "Run mypy using pre-commit"
+        run: pre-comment run mypy -a
+
+      # Provided below as an example, in case needed in future
       # - name: "Install dependencies"
       # yamllint disable rule:line-length
-      # yamllint disable-line rule:comments-indentation
-        #   # yamllint disable rule:line-length
+      # yamllint disable rule:comments-indentation
         #   run: |
         #     SOURCE=".pre-commit-config.yaml"
         #     echo "Install Python dependencies from: $SOURCE"
-        #     echo "With: pip install -y$PKGS"
-        #     # yamllint disable-line rule:line-length
+        #     echo "With: pip install $PKGS"
         #     PKGS=$(yq '.repos[] | select (.repo == "https://github.com/pre-commit/mirrors-mypy")' .pre-commit-config.yaml | \
-        #      grep additional_dependencies | \
-        #      awk -F: '{print $2}' | \
-        #      sed "s/\[//g" | \
-        #      sed "s/\]//g" | \
-        #      sed "s/,//g" | \
-        #      sed 's/"//g')
+        #       grep additional_dependencies | \
+        #       awk -F: '{print $2}' | \
+        #       sed "s/\[//g" | \
+        #       sed "s/\]//g" | \
+        #       sed "s/,//g" | \
+        #       sed 's/"//g')
+        #       pip install $PKGS
 
-      - name: "Run mypy using pre-commit"
-        run: pre-comment run mypy -a
+
