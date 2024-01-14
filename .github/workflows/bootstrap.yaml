@@ -105,7 +105,7 @@ jobs:
           done
 
           # If no changes required, do not throw an error
-          if (git status); then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "No updates/changes to commit"; exit 0
           else
             git add .
