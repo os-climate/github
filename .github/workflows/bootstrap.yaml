@@ -121,7 +121,7 @@ jobs:
           fi
           if [ -n "$GITHUB_TOKEN" ]; then
             git add .
-            if ! (git commit -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
+            if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
               -m "This commit created by automation/scripting" --no-verify); then
               echo "Commit failed; deleting local and remote branches, if necessary"
               git checkout main
