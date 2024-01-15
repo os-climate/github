@@ -31,6 +31,7 @@ jobs:
           path: ".devops"
 
       - name: "Update repository workflows and create PR"
+        id: update-repository
         env:
           GH_TOKEN: ${{ github.token }}
         # yamllint disable rule:line-length
@@ -115,6 +116,10 @@ jobs:
           if [ -z "$(git status --porcelain)" ]; then
             echo "No updates/changes to commit"; exit 0
           else
+            # Set a flag for use by the next action/step
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$GITHUB_TOKEN" ]; then
             git add .
             if ! (git commit -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
               -m "This commit created by automation/scripting" --no-verify); then
@@ -134,5 +139,25 @@ jobs:
                 "Chore: Pull DevOps tooling from upstream repository" \
                 --body 'Automated by a GitHub workflow: bootstrap.yaml'
             fi
+          else
+            echo "Script running in GitHub Actions worflow; proceeding to next step"
           fi
           ### SHELL CODE END ###
+
+      - name: Create Pull Request
+        if: steps.update-repository.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          token: ${{ github.token }}
+          commit-message: "Chore: Update DevOps tooling from central repository [skip-ci]"
+          signoff: "true"
+          branch: update-devops-tooling
+          delete-branch: true
+          title: "Chore: Update DevOps tooling from central repository [skip-ci]"
+          body: |
+            Update repository with content from upstream: os-climate/devops-toolkit
+          labels: |
+            automated pr
+          draft: false
