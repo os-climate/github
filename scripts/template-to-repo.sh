@@ -71,7 +71,11 @@ file_content_substitution() {
         fi
         sed -i "s/$ALT_TEMPLATE_NAME/$ALT_REPO_NAME/g" "$FILENAME"
     fi
-    echo "$COUNT total substitution(s) made in file: $FILENAME"
+    if [[ "$COUNT" != "0" ]] && [[ "$COUNT" = "1" ]]; then
+        echo "$COUNT substitution made in file: $FILENAME"
+    elif [[ "$COUNT" != "0" ]] && [[ "$COUNT" -gt "1" ]]; then
+        echo "$COUNT substitutions made in file: $FILENAME"
+    fi
 }
 
 ### Main script entry point
