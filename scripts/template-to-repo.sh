@@ -48,29 +48,35 @@ file_content_substitution() {
     else
         FILENAME="$1"
     fi
+    COUNT=0
     if (grep "$TEMPLATE_NAME" "$FILENAME" > /dev/null 2>&1); then
         MATCHES=$(grep -c "$TEMPLATE_NAME" "$FILENAME")
         if [ "$MATCHES" -eq 1 ]; then
-            echo "1 content substitution required: $FILENAME"
+            echo "1 content substitution required: $FILENAME (dashes)"
+            COUNT=$((COUNT++))
         else
-            echo "$MATCHES content substitutions required: $FILENAME"
+            echo "$MATCHES content substitutions required: $FILENAME (dashes)"
+            COUNT=$((COUNT+MATCHES))
         fi
         sed -i "s/$TEMPLATE_NAME/$REPO_NAME/g" "$FILENAME"
     fi
     if (grep "$ALT_TEMPLATE_NAME" "$FILENAME" > /dev/null 2>&1); then
         MATCHES=$(grep -c "$ALT_TEMPLATE_NAME" "$FILENAME")
         if [ "$MATCHES" -eq 1 ]; then
-            echo "1 content substitution required: $FILENAME"
+            echo "1 content substitution required: $FILENAME (underscores)"
+            COUNT=$((COUNT++))
         else
-            echo "$MATCHES content substitutions required: $FILENAME"
+            echo "$MATCHES content substitutions required: $FILENAME (underscores)"
+            COUNT=$((COUNT+MATCHES))
         fi
         sed -i "s/$ALT_TEMPLATE_NAME/$ALT_REPO_NAME/g" "$FILENAME"
     fi
+    echo "$COUNT total substitution(s) made in file: $FILENAME"
 }
 
 ### Main script entry point
 
-TEMPLATE_NAME=osc-python-template
+TEMPLATE_NAME=osc-rule-based-extractor
 ALT_TEMPLATE_NAME="${TEMPLATE_NAME//-/_}"
 
 if ! (git rev-parse --show-toplevel > /dev/null); then
