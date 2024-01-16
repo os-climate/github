@@ -67,13 +67,10 @@ jobs:
             fi
           }
 
-          # Remove branch, if it exists: update-devops-tooling
-          if (git rev-parse --verify update-devops-tooling > /dev/null 2>&1); then
-            git branch -d update-devops-tooling
-          fi
           echo "Removing remote branch if it exists: update-devops-tooling"
           git push origin --delete update-devops-tooling || :
-          git checkout -b "update-devops-tooling"
+          STRING=$(dd if=/dev/urandom bs=1k count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 10)
+          git checkout -b "update-$STRING"
 
           # Configure GIT
           TEST=$(git config -l)
@@ -123,15 +120,7 @@ jobs:
             git add .
             if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
               -m "This commit created by automation/scripting" --no-verify); then
-              echo "Commit failed; deleting local and remote branches, if necessary"
-              git checkout main
-              # Remove branch, if it exists: update-devops-tooling
-              if (git rev-parse --verify update-devops-tooling > /dev/null); then
-                  git branch -d update-devops-tooling
-              elif (git ls-remote origin update-devops-tooling); then
-                  echo "Removing remote branch: update-devops-tooling"
-                  git push origin --delete update-devops-tooling
-              fi
+              echo "Commit failed; aborting"; exit 1
             else
               git push --set-upstream origin update-devops-tooling
               # ToDo: need to verify if we are running in a GHA
@@ -140,7 +129,7 @@ jobs:
                 --body 'Automated by a GitHub workflow: bootstrap.yaml'
             fi
           else
-            echo "Script running in GitHub Actions worflow; proceeding to next step"
+            echo "Script running in GitHub Actions workflow; proceeding to next step"
           fi
           ### SHELL CODE END ###
 
