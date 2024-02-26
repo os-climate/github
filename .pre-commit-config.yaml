@@ -60,7 +60,7 @@ repos:
 
   # Autoformat: YAML, JSON, Markdown, etc.
   - repo: https://github.com/prettier/pre-commit
-    rev: v2.2.0
+    rev: 57f39166b5a5a504d6808b87ab98d41ebf095b46
     hooks:
       - id: prettier
         args:
@@ -80,12 +80,12 @@ repos:
   #       args: ['--py37-plus']
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.1.1
+    rev: 24.2.0
     hooks:
       - id: black
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.1.1
+    rev: 24.2.0
     hooks:
       - id: black-jupyter
 
@@ -125,7 +125,7 @@ repos:
         args: ["--profile", "black"]
 
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.33.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         args: [--strict]
@@ -143,11 +143,9 @@ repos:
   #     additional_dependencies: [black]
 
   - repo: https://github.com/pycqa/flake8
-    rev: "6.1.0"
+    rev: "7.0.0"
     hooks:
       - id: flake8
-        entry: pflake8
-        additional_dependencies: [pyproject-flake8]
 
   # Check for misspells in documentation files:
   # - repo: https://github.com/codespell-project/codespell
