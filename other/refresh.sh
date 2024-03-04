@@ -3,7 +3,7 @@
 ### Script to bulk refresh a directory containing repositories ###
 
 set -o pipefail
-set -xv
+# set -xv
 
 ### Variables ###
 
@@ -124,7 +124,7 @@ echo "Processing all GIT repositories in: $CURRENT_DIR"
 
 # Update all local repositories from origin
 # find * -depth 0 -type d | parallel --env _ refresh_repo :::
-for FOLDER in $(find * -depth 0 -type d); do
+find -- * -depth 0 -type d -print0 | while read -r -d $'\0' FOLDER; do
     refresh_repo "$FOLDER"
     #parallel --env _ refresh_repo :::
 done

@@ -42,12 +42,13 @@ change_dir_error() {
 
 auth_check
 
-# See if the repository has a pre-commit configuration
-# If not, copy the template file in place to prevent pre-commit.ci errors
-for repo in $(find * -depth 0 -type d); do
-    if [ ! -f "$repo"/.pre-commit-config.yaml ]; then
-        echo "No pre-commit config: $repo"
-        cp .pre-commit-config.yaml "$repo"
+# See if the repository has a pre-commit configuration file
+# If NOT, copy the template file in place to prevent errors
+
+find -- * -depth 0 -type d -print0 | while read -r -d $'\0' REPO; do
+    if [ ! -f "$REPO"/.pre-commit-config.yaml ]; then
+        echo "No pre-commit config: $REPO"
+        cp .pre-commit-config.yaml "$REPO"
 
         ### Values for GIT operations
         BRANCH="implement-minimal-precommit"
@@ -55,7 +56,7 @@ for repo in $(find * -depth 0 -type d); do
         BODY="This will satisfy pre-commit.ci and prevent merges from blocking"
 
         ### Raise a PR with upstream/main
-        cd "$repo" || change_dir_error
+        cd "$REPO" || change_dir_error
         "$GIT_CLI" pull
         "$GIT_CLI" checkout -b "$BRANCH"
         "$GIT_CLI" add .pre-commit-config.yaml
@@ -83,3 +84,4 @@ for repo in $(find * -depth 0 -type d); do
         # fi
     fi
 done
+echo "Script completed"; exit 0
