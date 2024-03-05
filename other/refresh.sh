@@ -8,7 +8,6 @@ set -o pipefail
 ### Variables ###
 
 PARALLEL_THREADS="8"
-echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Checks ###
 
@@ -19,10 +18,12 @@ if [ ! -x "$GIT_CLI" ]; then
 fi
 
 if [ $# -ne 1 ] || { [ ! "$1" = "clone" ] && [ ! "$1" = "fork" ]; } ; then
-    echo "Usage: $0    [ clone | fork ]"; exit 1
+    echo "Usage: $0 [ clone | fork ]"; exit 1
 else
     OPERATION="$1"
 fi
+
+echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Functions ###
 
