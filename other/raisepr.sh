@@ -8,7 +8,6 @@ set -o pipefail
 ### Variables ###
 
 PARALLEL_THREADS="1"
-echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Checks ###
 
@@ -23,6 +22,8 @@ if [ ! -x "$GITHUB_CLI" ]; then
     echo "The GitHub CLI was not found in your PATH"; exit 1
 fi
 export GITHUB_CLI
+
+echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Functions ###
 

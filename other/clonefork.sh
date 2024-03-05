@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 
-### Script to bulk clone/fork a GitHub organisation's repositories ###
+### Script to bulk clone/fork all of a GitHub organisation's repositories ###
 
 set -o pipefail
-# set -x
+# set -xv
 
 ### Variables ###
 
-SOURCE_GITHUB_ORG="os-climate"
-TARGET_GITHUB_ORG="modeseven-os-climate"
 PARALLEL_THREADS="8"
-echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Checks ###
 
@@ -19,11 +16,33 @@ if [ ! -x "$GITHUB_CLI" ]; then
     echo "The GitHub CLI was not found in your PATH"; exit 1
 fi
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0    [ clone | fork ]"; exit 1
+_usage() {
+    echo "Script has two modes of operation:"
+    echo "Usage: $0 clone [ src github org ]"
+    echo "       $0 fork [ src github org ] [ dst github org ]"; exit 1
+}
+
+# Source repository specification is entirely optional
+# (if unspecified uses your personal profile repos)
+
+# Setup the two different parameters of clone operations
+if  { [ $# -eq 1 ] || [ $# -eq 2 ]; } && [ "$1" = "clone" ]; then
+    SOURCE_GITHUB_ORG="$2"
+
+# Setup the two different parameters of fork operations
+elif  [ $# -eq 2 ] && [ "$1" = "fork" ]; then
+    SOURCE_GITHUB_ORG="$2"
+    FLAGS="--default-branch-only --clone --remote"
+elif  [ $# -eq 3 ] && [ "$1" = "fork" ]; then
+    SOURCE_GITHUB_ORG="$2"
+    TARGET_GITHUB_ORG="$3"
+    FLAGS="--default-branch-only --org $TARGET_GITHUB_ORG --clone --remote"
 else
-    OPERATION="$1"
+    _usage
 fi
+
+OPERATION="$1"
+echo "Parallel threads: $PARALLEL_THREADS"
 
 ### Functions ###
 
@@ -36,18 +55,12 @@ auth_check() {
 
 ### Operations m###
 
-if [ "$OPERATION" = "clone" ]; then
-    auth_check
-    "$GITHUB_CLI" repo list "$SOURCE_GITHUB_ORG" \
-        --limit 4000 --json nameWithOwner --jq '.[].nameWithOwner' | \
-        parallel -j "$PARALLEL_THREADS" "$GITHUB_CLI" repo clone
-elif [ "$OPERATION" = "fork" ]; then
-    auth_check
-    "$GITHUB_CLI" repo list "$SOURCE_GITHUB_ORG" \
-        --limit 4000 --json nameWithOwner --jq '.[].nameWithOwner' | \
-        parallel --j "$PARALLEL_THREADS" "$GITHUB_CLI" repo fork \
-        --default-branch-only --org "$TARGET_GITHUB_ORG" --clone --remote
-else
-    echo "Invalid operation specified: $OPERATION"
-    echo "Valid options are: clone, fork"; exit 1
-fi
+# Make sure we are logged into GitHub
+auth_check
+
+# List all the repositories in the source ORG
+# Then clone/fork them (to the target ORG if forking)
+"$GITHUB_CLI" repo list "$SOURCE_GITHUB_ORG" \
+    --limit 4000 --json nameWithOwner --jq '.[].nameWithOwner' | \
+    parallel --j "$PARALLEL_THREADS" "$GITHUB_CLI" repo \
+    "$OPERATION" "$FLAGS"
