@@ -17,10 +17,8 @@ if [ ! -x "$GIT_CLI" ]; then
     echo "GIT was not found in your PATH"; exit 1
 fi
 
-if [ $# -ne 1 ] || { [ ! "$1" = "clone" ] && [ ! "$1" = "fork" ]; } ; then
-    echo "Usage: $0 [ clone | fork ]"; exit 1
-else
-    OPERATION="$1"
+if [ $# -ne 0 ]; then
+    echo "Usage: $0"; exit 1
 fi
 
 echo "Parallel threads: $PARALLEL_THREADS"
@@ -35,12 +33,24 @@ check_is_repo() {
         echo "Skipping folder NOT a git repository: $CURRENT_DIR"
         return 1
     else
-        echo "Processing: $CURRENT_DIR -> \c"
+        printf "Processing: %s -> " "$CURRENT_DIR"
         # Figure out which of the two options is the primary branch name
         GIT_MAIN=$("$GIT_CLI" branch -l main \
             master --format '%(refname:short)')
         export GIT_MAIN
         return 0
+    fi
+}
+
+check_if_fork() {
+    # Checks for both upstream and origin
+    UPSTREAM_COUNT=$(git remote | \
+        grep -E -e 'upstream|origin' -c)
+    if [ "$UPSTREAM_COUNT" -eq 2 ]; then
+        # Repository is a fork
+        return 0
+    else
+        return 1
     fi
 }
 
@@ -50,7 +60,7 @@ checkout_main_or_master() {
     | grep -E "main|master" > /dev/null 2>&1); then
         # Need to swap branch in this repository
         if ("$GIT_CLI" checkout "$GIT_MAIN"); then
-            echo "$GIT_MAIN -> \c"
+            printf "%s -> " "$GIT_MAIN"
             return 0
         else
             echo "Error checking out $GIT_MAIN."
@@ -58,32 +68,33 @@ checkout_main_or_master() {
         fi
     else
         # Already on the appropriate branch
-        echo "$GIT_MAIN -> \c"
+        printf "%s -> " "$GIT_MAIN"
         return 0
     fi
 }
 
-update_fork() {
-    echo "resetting -> \c"
-    if ("$GIT_CLI" fetch upstream > /dev/null 2>&1; \
-        "$GIT_CLI" reset --hard upstream/"$GIT_MAIN" > /dev/null 2>&1; \
-        "$GIT_CLI" push origin "$GIT_MAIN" --force > /dev/null 2>&1); then
-        echo "Done."
-        return 0
+update_repo() {
+    if ! (check_if_fork); then
+        printf "updating clone -> "
+        if ("$GIT_CLI" pull > /dev/null 2>&1;); then
+            echo "Done."
+            return 0
+        else
+            echo "Error."
+            return 1
+        fi
     else
-        echo "Error."
-        return 1
-    fi
-}
-
-update_clone() {
-    echo "updating -> \c"
-    if ("$GIT_CLI" pull > /dev/null 2>&1;); then
-        echo "Done."
-        return 0
-    else
-        echo "Error."
-        return 1
+        # Repository is a fork
+        printf "resetting fork -> "
+        if ("$GIT_CLI" fetch upstream > /dev/null 2>&1; \
+            "$GIT_CLI" reset --hard upstream/"$GIT_MAIN" > /dev/null 2>&1; \
+            "$GIT_CLI" push origin "$GIT_MAIN" --force > /dev/null 2>&1); then
+            echo "Done."
+            return 0
+        else
+            echo "Error."
+            return 1
+        fi
     fi
 }
 
@@ -98,12 +109,8 @@ refresh_repo() {
     # Check current directory is a GIT repository
     if check_is_repo; then
         if (checkout_main_or_master); then
-            # Update origin against upstream
-            if [ "$OPERATION" = "fork" ]; then
-                update_fork
-            elif [ "$OPERATION" = "clone" ]; then
-                update_clone
-            fi
+            # Update the repository
+            update_repo
         fi
     fi
     # Change back to parent directory
@@ -112,7 +119,7 @@ refresh_repo() {
 
 # Make functions available to GNU parallel
 # shellcheck disable=SC3045
-export -f refresh_repo update_fork update_clone \
+export -f refresh_repo update_repo \
     checkout_main_or_master check_is_repo change_dir_error
 
 ### Operations ###
