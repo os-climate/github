@@ -44,7 +44,7 @@ check_is_repo() {
     fi
 }
 
-main_or_master() {
+checkout_main_or_master() {
     # Only checkout main/master if not already on that branch
     if ! ("$GIT_CLI" rev-parse --abbrev-ref HEAD \
     | grep -E "main|master" > /dev/null 2>&1); then
@@ -97,7 +97,7 @@ refresh_repo() {
     cd "$1" || change_dir_error
     # Check current directory is a GIT repository
     if check_is_repo; then
-        if (main_or_master); then
+        if (checkout_main_or_master); then
             # Update origin against upstream
             if [ "$OPERATION" = "fork" ]; then
                 update_fork
@@ -113,7 +113,7 @@ refresh_repo() {
 # Make functions available to GNU parallel
 # shellcheck disable=SC3045
 export -f refresh_repo update_fork update_clone \
-    main_or_master check_is_repo change_dir_error
+    checkout_main_or_master check_is_repo change_dir_error
 
 ### Operations ###
 
