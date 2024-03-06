@@ -2,12 +2,15 @@
 
 ### Script to bulk raise a PR in multiple repositories ###
 
+# shellcheck disable=SC2317
+
 set -o pipefail
-# set -x
+# set -xv
 
 ### Variables ###
 
-PARALLEL_THREADS="1"
+CONDITIONAL="yes"
+PARALLEL_THREADS="8"
 
 ### Checks ###
 
@@ -35,19 +38,46 @@ auth_check() {
 }
 
 change_dir_error() {
-    echo "Could not change directory"
-    exit 1
+    echo "Could not change directory"; exit 1
 }
 
-### Operations ###
+check_if_main() {
+    # Figure out which of the two options is the primary branch name
+    PRIMARY_BRANCH=$("$GIT_CLI" branch -l main \
+        master --format '%(refname:short)')
+    export PRIMARY_BRANCH
+    if [ "$PRIMARY_BRANCH" = "main" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
-auth_check
+check_is_repo() {
+    DIRECTORY="$1"
+    cd "$DIRECTORY" || change_dir_error
+    # Check current directory is a GIT repository
+    "$GIT_CLI" status > /dev/null 2>&1
+    RETURN_CODE="$?"
+    cd .. || change_dir_error
+    if [ "$RETURN_CODE" -eq 128 ]; then
+        echo "Folder is NOT a git repository: $DIRECTORY"
+        return 1
+    else
+        return 0
+    fi
+}
 
-# See if the repository has a pre-commit configuration file
-# If NOT, copy the template file in place to prevent errors
+perform_repo_actions() {
 
-find -- * -depth 0 -type d -print0 | while read -r -d $'\0' REPO; do
+    # Define variables
+    REPO="$1"
+    SLEEP_TIME="60"
+
+    # Only take action if pre-condition is met
     if [ ! -f "$REPO"/.pre-commit-config.yaml ]; then
+
+        # Actions/changes to perform automatically in repository
         echo "No pre-commit config: $REPO"
         cp .pre-commit-config.yaml "$REPO"
 
@@ -67,7 +97,7 @@ find -- * -depth 0 -type d -print0 | while read -r -d $'\0' REPO; do
         PR_NUMBER=$(basename "$PR_URL")
         echo "Pull request #$PR_NUMBER URL: $PR_URL"
         echo "Sleeping..."
-        sleep 60
+        sleep "$SLEEP_TIME"
         "$GITHUB_CLI" pr merge "$URL" --delete-branch --merge
         "$GIT_CLI" push origin --delete "$BRANCH" > /dev/null 2>&1 &
         "$GIT_CLI" push upstream --delete "$BRANCH" > /dev/null 2>&1 &
@@ -84,5 +114,52 @@ find -- * -depth 0 -type d -print0 | while read -r -d $'\0' REPO; do
         #      git push upstream --delete "$BRANCH"
         # fi
     fi
-done
-echo "Script completed"; exit 0
+}
+
+# Export functions for use by GNU parallel tool
+export -f perform_repo_actions
+
+### Operations ###
+
+auth_check
+
+# Only used if repository operations are optional
+if [ "$CONDITIONAL" = "yes" ]; then
+
+    # Count the number of GIT repositories
+    REPOS="0"
+
+    ### Modify the code below with conditions ###
+
+    FOLDERS=$(find . -type d -depth 1)
+    for FOLDER in $FOLDERS; do
+        TARGET=$(basename "$FOLDER")
+        if (check_is_repo "$TARGET"); then
+            REPOS=$((REPOS+1))
+            if [ ! -f "$TARGET"/.pre-commit-config.yaml ]; then
+                COUNTER=$((COUNTER +1 ))
+                TARGETS+=" $TARGET"
+                echo "FOUND!"
+            fi
+        fi
+    done
+    UPDATES=$(echo "$TARGETS" | wc -w)
+    PROCESSED=$(echo "$FOLDERS" | wc -w)
+    echo "$PROCESSED directories, $REPOS repositories"
+fi
+
+if ! [ "$UPDATES" -eq "0" ]; then
+    echo "$UPDATES repositories require updates"
+    # Invoke GNU parallel to update the repository
+
+    echo "Script completed"; exit 0
+else
+    echo "No repository operations were required"; exit 1
+fi
+
+# Check if repository is archived or read-only
+#find -depth 0 -type d -print0 | while read -r -d $'\0' REPO; do
+#    # Should migrate this to a bunch of parallel operations
+#    parallel -j "$PARALLEL_THREADS" perform_repo_actions ::: "$REPO"
+#    # parallel -j "$PARALLEL_THREADS" --env _ perform_repo_actions ::: "$REPO"
+#done
