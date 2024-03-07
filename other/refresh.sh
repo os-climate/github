@@ -2,6 +2,8 @@
 
 ### Script to bulk refresh a directory containing repositories ###
 
+# shellcheck disable=SC2317
+
 set -o pipefail
 # set -xv
 
@@ -42,6 +44,20 @@ check_is_repo() {
     fi
 }
 
+count_repos() {
+    # Count the number of GIT repositories
+    REPOS="0"
+    FOLDERS=$(find . -type d -depth 1)
+    for FOLDER in $FOLDERS; do
+        TARGET=$(basename "$FOLDER")
+        if (check_is_repo "$TARGET"); then
+            REPOS=$((REPOS+1))
+        fi
+    done
+    FOUND=$(echo "$FOLDERS" | wc -w)
+    echo "Found: $FOUND directories, $REPOS git repositories"
+}
+
 check_if_fork() {
     # Checks for both upstream and origin
     UPSTREAM_COUNT=$(git remote | \
@@ -54,21 +70,22 @@ check_if_fork() {
     fi
 }
 
-checkout_main_or_master() {
-    # Only checkout main/master if not already on that branch
-    if ! ("$GIT_CLI" rev-parse --abbrev-ref HEAD \
-    | grep -E "main|master" > /dev/null 2>&1); then
+checkout_head_branch() {
+    CURRENT_BRANCH=$("$GIT_CLI" branch --show-current)
+    HEAD_BRANCH=$("$GIT_CLI" rev-parse --abbrev-ref HEAD)
+    # Only checkout HEAD if not already on that branch
+    if [ "$CURRENT_BRANCH" != "$HEAD_BRANCH" ]; then
         # Need to swap branch in this repository
-        if ("$GIT_CLI" checkout "$GIT_MAIN"); then
-            printf "%s -> " "$GIT_MAIN"
+        if ("$GIT_CLI" checkout "$HEAD_BRANCH" > /dev/null 2>&1); then
+            printf "switched to %s -> " "$HEAD_BRANCH"
             return 0
         else
-            echo "Error checking out $GIT_MAIN."
+            echo "Error checking out $HEAD_BRANCH"
             return 1
         fi
     else
         # Already on the appropriate branch
-        printf "%s -> " "$GIT_MAIN"
+        printf "%s -> " "$HEAD_BRANCH"
         return 0
     fi
 }
@@ -108,7 +125,7 @@ refresh_repo() {
     cd "$1" || change_dir_error
     # Check current directory is a GIT repository
     if check_is_repo; then
-        if (checkout_main_or_master); then
+        if (checkout_head_branch); then
             # Update the repository
             update_repo
         fi
@@ -118,22 +135,12 @@ refresh_repo() {
 }
 
 # Make functions available to GNU parallel
-# shellcheck disable=SC3045
-export -f refresh_repo update_repo \
-    checkout_main_or_master check_is_repo change_dir_error
+export -f refresh_repo check_if_fork update_repo \
+    checkout_head_branch check_is_repo change_dir_error
 
 ### Operations ###
 
 CURRENT_DIR=$(basename "$PWD")
 echo "Processing all GIT repositories in: $CURRENT_DIR"
-
-# parallel --record-env
-# echo "hazard" | parallel --env _ --j 1 refresh_repo :::
-
-# Update all local repositories from origin
-# find * -depth 0 -type d | parallel --env _ refresh_repo :::
-find -- * -depth 0 -type d -print0 | while read -r -d $'\0' FOLDER; do
-    refresh_repo "$FOLDER"
-    #parallel --env _ refresh_repo :::
-done
+find -- * -depth 0 -type d | parallel -j "$PARALLEL_THREADS" --env _ refresh_repo :::
 echo "Script completed"; exit 0
