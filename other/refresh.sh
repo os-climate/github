@@ -116,8 +116,7 @@ update_repo() {
 }
 
 change_dir_error() {
-    echo "Could not change directory"
-    exit 1
+    echo "Could not change directory"; exit 1
 }
 
 refresh_repo() {
