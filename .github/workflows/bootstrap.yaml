@@ -67,10 +67,29 @@ jobs:
             fi
           }
 
+<<<<<<< Updated upstream
           echo "Removing remote branch if it exists: update-devops-tooling"
           git push origin --delete update-devops-tooling || :
           STRING=$(dd if=/dev/urandom bs=1k count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 10)
           git checkout -b "update-$STRING"
+=======
+          # Determine if an existing automated PR is open
+          if ! (gh pr list --state open --author 'github-actions[bot]' | \
+            grep 'no pull requests match your search in'); then
+          # Capture the existing PR number
+          PR_NUM=$(gh pr list --state open -L 1 \
+            --author 'github-actions[bot]' --json number | \
+            grep "number" | sed "s/:/ /g" | awk '{print $2}' | \
+            sed "s/}//g" | sed "s/]//g")
+          # Checkout the existing pull request
+          gh pr checkout "$PR_NUM"
+          else
+            # Create a unique branch name
+            STRING=$(dd if=/dev/urandom bs=1k count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 10)
+            BRANCHNAME="devops-update-$STRING"
+            git checkout -b "$BRANCHNAME"
+          fi
+>>>>>>> Stashed changes
 
           # Configure GIT
           TEST=$(git config -l)
