@@ -53,8 +53,11 @@ jobs:
           EXCLUDE_FILE=".devops-exclusions"
           perform_operation() {
             ELEMENT="$1"
-            if [ ! -f "$EXCLUDE_FILE" ]; then
-              # Opt-out file does not exist; all operations will be performed
+            if [ "$ELEMENT" = "$EXCLUDE_FILE" ]; then
+              echo "Never to be updated by automation: $EXCLUDE_FILE"
+              return 1
+            elif [ ! -f "$EXCLUDE_FILE" ]; then
+              echo "All operations will be performed without: $EXCLUDE_FILE"
               return 0
             else
               if (grep -Fxq "$ELEMENT" "$EXCLUDE_FILE"); then
