@@ -37,7 +37,8 @@ jobs:
         # yamllint disable rule:line-length
         run: |
           ### SHELL CODE START ###
-          set -xeu -o pipefail
+
+          AUTOMATION_BRANCH="update-devops-tooling"
           REPO_DIR=$(git rev-parse --show-toplevel)
           # Ensure working from top-level of GIT repository
           CURRENT_DIR=$(pwd)
@@ -49,15 +50,14 @@ jobs:
           fi
 
           # Define a function to allow selective opt-out of devops tooling
-          OPT_OUT=".devops-exclusions"
+          EXCLUDE_FILE=".devops-exclusions"
           perform_operation() {
             ELEMENT="$1"
-            if [ ! -f "$OPT_OUT" ]; then
+            if [ ! -f "$EXCLUDE_FILE" ]; then
               # Opt-out file does not exist; all operations will be performed
               return 0
             else
-              if grep -Fxq "$ELEMENT" "$OPT_OUT"
-              then
+              if (grep -Fxq "$ELEMENT" "$EXCLUDE_FILE"); then
                 # Element is excluded from processing
                 return 1
               else
@@ -67,11 +67,6 @@ jobs:
             fi
           }
 
-
-          echo "Removing remote branch if it exists: update-devops-tooling"
-          git push origin --delete update-devops-tooling || :
-          STRING=$(dd if=/dev/urandom bs=1k count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 10)
-          git checkout -b "update-$STRING"
           # Determine if an existing automated PR is open
           if ! (gh pr list --state open --author 'github-actions[bot]' | \
             grep 'no pull requests match your search in'); then
@@ -83,15 +78,14 @@ jobs:
           # Checkout the existing pull request
           gh pr checkout "$PR_NUM"
           else
-            # Create a unique branch name
-            STRING=$(dd if=/dev/urandom bs=1k count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 10)
-            BRANCHNAME="devops-update-$STRING"
-            git checkout -b "$BRANCHNAME"
+            echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
+            git push origin --delete $AUTOMATION_BRANCH || :
+            git checkout -b "$AUTOMATION_BRANCH"
           fi
 
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
-          TEST=$(git config -l)
+          TEST=$(git config -l > /dev/null 2>&1)
           if [ -n "$TEST" ]; then
             git config user.name "github-actions[bot]"
             git config user.email \
@@ -109,7 +103,8 @@ jobs:
               fi
               # Update folder contents
               echo "Updating folder contents: $FOLDER"
-              for FILE in $(find .devops/"$FOLDER" -maxdepth 0 -type f); do
+              FILE_LIST=$(find .devops/"$FOLDER" -maxdepth 0 -type f)
+              for FILE in $FILE_LIST; do
                 echo "Copying: $FOLDER/$FILE into $FOLDER"
                 cp .devops/"$FOLDER"/"$FILE" "$FOLDER"
               done
@@ -130,39 +125,32 @@ jobs:
             fi
           done
 
-          # Add any/all changed files, if present
-          echo "Adding any changed/modified files"
-          # Report any changes to local content
-          git add .
-          git status
-
           # If no changes required, do not throw an error
           if [ -z "$(git status --porcelain)" ]; then
             echo "No updates/changes to commit"; exit 0
-          else
-            echo "Changes require a PR be raised"
-            # Set a flag for use by the next action/step
+          # Next step is only performed if running as GitHub Action
+          elif [ -n "$GITHUB_OUTPUT" ]; then
+            # Set outputs for potential use by the next actions/steps
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            # Write the branch name into the job output; currently unused
             echo "branchname=$BRANCHNAME" >> "$GITHUB_OUTPUT"
+            # In the GitHub Actions workflow, the next step will raise the PR
+            exit 0
           fi
 
-          # Only create PR here if NOT running in a GitHub Actions workflow
-          if [ -z ${GH_TOKEN+x} ]; then
-            # GH_TOKEN is undefined
-            if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
-              -m "This commit created by automation/scripting" --no-verify); then
-              echo "Commit failed; aborting"; exit 1
-            else
-              git push --set-upstream origin "$BRANCHNAME"
-              gh pr create --title \
-                "Chore: Pull DevOps tooling from upstream repository" \
-                --body 'Automated by a GitHub workflow: bootstrap.yaml'
-            fi
+          # The code below to create the PR is only called when running from a shell
+          echo "Changes require that a PR be raised"
+          git status
+          git add .
+          git status
+          if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
+            -m "This commit created by automation/scripting" --no-verify); then
+            echo "Commit failed; aborting"; exit 1
           else
-            echo "Pushing branch $BRANCHNAME to origin"
-            git push --set-upstream origin $BRANCHNAME
-            echo "Script running in GitHub Actions workflow; proceeding to next step"
+            git push --set-upstream origin "$AUTOMATION_BRANCH"
+            # ToDo: need to verify if we are running in a GHA
+            gh pr create --head origin/"$AUTOMATION_BRANCH" --title \
+              "Chore: Pull DevOps tooling from upstream repository" \
+              --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
           ### SHELL CODE END ###
 
