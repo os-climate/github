@@ -37,7 +37,7 @@ jobs:
         # yamllint disable rule:line-length
         run: |
           ### SHELL CODE START ###
-          
+
           AUTOMATION_BRANCH="update-devops-tooling"
           REPO_DIR=$(git rev-parse --show-toplevel)
           # Ensure working from top-level of GIT repository
@@ -103,7 +103,8 @@ jobs:
               fi
               # Update folder contents
               echo "Updating folder contents: $FOLDER"
-              for FILE in $(find .devops/"$FOLDER" -maxdepth 0 -type f); do
+              FILE_LIST=$(find .devops/"$FOLDER" -maxdepth 0 -type f)
+              for FILE in $FILE_LIST; do
                 echo "Copying: $FOLDER/$FILE into $FOLDER"
                 cp .devops/"$FOLDER"/"$FILE" "$FOLDER"
               done
