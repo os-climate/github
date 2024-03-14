@@ -14,11 +14,11 @@ PARALLEL_THREADS="8"
 
 ### Checks ###
 
-GIT_CLI=$(which git)
-if [ ! -x "$GIT_CLI" ]; then
+GIT_CMD=$(which git)
+if [ ! -x "$GIT_CMD" ]; then
     echo "GIT was not found in your PATH"; exit 1
 fi
-export GIT_CLI
+export GIT_CMD
 
 GITHUB_CLI=$(which gh)
 if [ ! -x "$GITHUB_CLI" ]; then
@@ -43,7 +43,7 @@ change_dir_error() {
 
 check_if_main() {
     # Figure out which of the two options is the primary branch name
-    PRIMARY_BRANCH=$("$GIT_CLI" branch -l main \
+    PRIMARY_BRANCH=$("$GIT_CMD" branch -l main \
         master --format '%(refname:short)')
     export PRIMARY_BRANCH
     if [ "$PRIMARY_BRANCH" = "main" ]; then
@@ -57,7 +57,7 @@ check_is_repo() {
     DIRECTORY="$1"
     cd "$DIRECTORY" || change_dir_error
     # Check current directory is a GIT repository
-    "$GIT_CLI" status > /dev/null 2>&1
+    "$GIT_CMD" status > /dev/null 2>&1
     RETURN_CODE="$?"
     cd .. || change_dir_error
     if [ "$RETURN_CODE" -eq 128 ]; then
@@ -88,19 +88,19 @@ perform_repo_actions() {
 
         ### Raise a PR with upstream/main
         cd "$REPO" || change_dir_error
-        "$GIT_CLI" pull
-        "$GIT_CLI" checkout -b "$BRANCH"
-        "$GIT_CLI" add .pre-commit-config.yaml
-        "$GIT_CLI" commit -as -S -m "Chore: $TITLE" --no-verify
-        "$GIT_CLI" push
+        "$GIT_CMD" pull
+        "$GIT_CMD" checkout -b "$BRANCH"
+        "$GIT_CMD" add .pre-commit-config.yaml
+        "$GIT_CMD" commit -as -S -m "Chore: $TITLE" --no-verify
+        "$GIT_CMD" push
         PR_URL=$("$GITHUB_CLI" pr create --title "$TITLE" --body "$BODY")
         PR_NUMBER=$(basename "$PR_URL")
         echo "Pull request #$PR_NUMBER URL: $PR_URL"
         echo "Sleeping..."
         sleep "$SLEEP_TIME"
         "$GITHUB_CLI" pr merge "$URL" --delete-branch --merge
-        "$GIT_CLI" push origin --delete "$BRANCH" > /dev/null 2>&1 &
-        "$GIT_CLI" push upstream --delete "$BRANCH" > /dev/null 2>&1 &
+        "$GIT_CMD" push origin --delete "$BRANCH" > /dev/null 2>&1 &
+        "$GIT_CMD" push upstream --delete "$BRANCH" > /dev/null 2>&1 &
         # Change back to parent directory
         cd .. || change_dir_error
 
