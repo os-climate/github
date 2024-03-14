@@ -2,8 +2,8 @@
 
 ### Script to bootstrap the OS-Climate DevOps environment ###
 
-# set -eu -o pipefail
-set -xv
+set -eu -o pipefail
+# set -xv
 
 ### Variables ###
 
@@ -44,12 +44,11 @@ cleanup_on_exit() {
         # git branch -d "$PR_BRANCH" > /dev/null 2>&1
     fi
     if [ -d "$DEVOPS_DIR" ]; then
-        echo "Removing interim/temporary devops repository..."
         rm -Rf "$DEVOPS_DIR"
+        echo "Removed temporary devops repository clone"
     fi
     if [ -f "$SHELL_SCRIPT" ]    ; then
         echo "NOT removing shell code during debugging"
-        echo "Script path: $SHELL_SCRIPT"
         # rm "$SHELL_SCRIPT"
 
     fi
@@ -58,6 +57,16 @@ trap cleanup_on_exit EXIT
 
 ### Main script entry point
 
+# Get organisation and repository name
+# git config --get remote.origin.url
+# git@github.com:ModeSevenIndustrialSolutions/test-bootstrap.git
+URL=$(git config --get remote.origin.url)
+
+# Take the above and store it converted as ORG_AND_REPO
+# e.g. ModeSevenIndustrialSolutions/test-bootstrap
+ORG_AND_REPO=${URL/%.git}
+ORG_AND_REPO=${ORG_AND_REPO//:/ }
+ORG_AND_REPO=$(echo "$ORG_AND_REPO" | awk '{ print $2 }')
 HEAD_BRANCH=$("$GIT_CMD" rev-parse --abbrev-ref HEAD)
 REPO_DIR=$(git rev-parse --show-toplevel)
 # Change to top-level of GIT repository
@@ -69,11 +78,15 @@ fi
 
 # Directory used below MUST match code in bootstrap.yaml
 DEVOPS_DIR=".devops"
-echo "Cloning DevOps repository into: $DEVOPS_DIR"
-git clone "$DEVOPS_REPO" "$DEVOPS_DIR"
+printf "Cloning DevOps repository into: %s" $DEVOPS_DIR
+if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
+    echo " [successful]"
+else
+    echo " [failed]"; exit 1
+fi
 
 # The section below extracts shell code from the bootstrap.yaml file
-echo "Extracting shell code from bootstrap.yaml file..."
+echo "Extracting shell code from bootstrap.yaml file"
 EXTRACT="false"
 while read -r LINE; do
     if [ "$LINE" = "### SHELL CODE START ###" ]; then
@@ -87,13 +100,11 @@ while read -r LINE; do
     if [ "$EXTRACT" = "true" ]; then
         echo "$LINE" >> "$SHELL_SCRIPT"
         if [ "$LINE" = "### SHELL CODE END ###" ]; then
-            echo "Successfully extracted shell script from bootstrap.yaml"
+            echo "Script extraction complete"
             break
         fi
     fi
 done < "$DEVOPS_DIR"/.github/workflows/bootstrap.yaml
 
 echo "Running extracted shell script code"
-# set +eu +o pipefail
 # "$SHELL_SCRIPT"
-cat "$SHELL_SCRIPT"
