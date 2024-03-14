@@ -13,9 +13,9 @@ PARALLEL_THREADS="8"
 
 ### Checks ###
 
-GIT_CLI=$(which git)
-export GIT_CLI
-if [ ! -x "$GIT_CLI" ]; then
+GIT_CMD=$(which git)
+export GIT_CMD
+if [ ! -x "$GIT_CMD" ]; then
     echo "GIT was not found in your PATH"; exit 1
 fi
 
@@ -30,14 +30,14 @@ echo "Parallel threads: $PARALLEL_THREADS"
 check_is_repo() {
     CURRENT_DIR=$(basename "$PWD")
     # Check current directory is a GIT repository
-    "$GIT_CLI" status > /dev/null 2>&1
+    "$GIT_CMD" status > /dev/null 2>&1
     if [ $? -eq 128 ]; then
         echo "Skipping folder NOT a git repository: $CURRENT_DIR"
         return 1
     else
         printf "Processing: %s -> " "$CURRENT_DIR"
         # Figure out which of the two options is the primary branch name
-        GIT_MAIN=$("$GIT_CLI" branch -l main \
+        GIT_MAIN=$("$GIT_CMD" branch -l main \
             master --format '%(refname:short)')
         export GIT_MAIN
         return 0
@@ -71,12 +71,12 @@ check_if_fork() {
 }
 
 checkout_head_branch() {
-    CURRENT_BRANCH=$("$GIT_CLI" branch --show-current)
-    HEAD_BRANCH=$("$GIT_CLI" rev-parse --abbrev-ref HEAD)
+    CURRENT_BRANCH=$("$GIT_CMD" branch --show-current)
+    HEAD_BRANCH=$("$GIT_CMD" rev-parse --abbrev-ref HEAD)
     # Only checkout HEAD if not already on that branch
     if [ "$CURRENT_BRANCH" != "$HEAD_BRANCH" ]; then
         # Need to swap branch in this repository
-        if ("$GIT_CLI" checkout "$HEAD_BRANCH" > /dev/null 2>&1); then
+        if ("$GIT_CMD" checkout "$HEAD_BRANCH" > /dev/null 2>&1); then
             printf "switched to %s -> " "$HEAD_BRANCH"
             return 0
         else
@@ -93,7 +93,7 @@ checkout_head_branch() {
 update_repo() {
     if ! (check_if_fork); then
         printf "updating clone -> "
-        if ("$GIT_CLI" pull > /dev/null 2>&1;); then
+        if ("$GIT_CMD" pull > /dev/null 2>&1;); then
             echo "Done."
             return 0
         else
@@ -103,9 +103,9 @@ update_repo() {
     else
         # Repository is a fork
         printf "resetting fork -> "
-        if ("$GIT_CLI" fetch upstream > /dev/null 2>&1; \
-            "$GIT_CLI" reset --hard upstream/"$GIT_MAIN" > /dev/null 2>&1; \
-            "$GIT_CLI" push origin "$GIT_MAIN" --force > /dev/null 2>&1); then
+        if ("$GIT_CMD" fetch upstream > /dev/null 2>&1; \
+            "$GIT_CMD" reset --hard upstream/"$GIT_MAIN" > /dev/null 2>&1; \
+            "$GIT_CMD" push origin "$GIT_MAIN" --force > /dev/null 2>&1); then
             echo "Done."
             return 0
         else
