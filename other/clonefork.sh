@@ -13,7 +13,14 @@ PARALLEL_THREADS="8"
 
 GITHUB_CLI=$(which gh)
 if [ ! -x "$GITHUB_CLI" ]; then
-    echo "The GitHub CLI was not found in your PATH"; exit 1
+    echo "The GitHub CLI was NOT found in your PATH"; exit 1
+fi
+
+PARALLEL_CMD=$(which parallel)
+if [ ! -x "$PARALLEL_CMD" ]; then
+    echo "The GNU parallel command was NOT found in your PATH"
+    echo "On macOS you can install with homebrew using:"
+    echo "  brew install parallel"; exit 1
 fi
 
 _usage() {
@@ -62,5 +69,5 @@ auth_check
 # Then clone/fork them (to the target ORG if forking)
 "$GITHUB_CLI" repo list "$SOURCE_GITHUB_ORG" \
     --limit 4000 --json nameWithOwner --jq '.[].nameWithOwner' | \
-    parallel --j "$PARALLEL_THREADS" "$GITHUB_CLI" repo \
+    "$PARALLEL_CMD" --j "$PARALLEL_THREADS" "$GITHUB_CLI" repo \
     "$OPERATION" "$FLAGS"
