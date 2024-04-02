@@ -53,21 +53,16 @@ jobs:
           EXCLUDE_FILE=".devops-exclusions"
           perform_operation() {
             ELEMENT="$1"
+            # Elements excluded from processing return exit status 1
             if [ "$ELEMENT" = "$EXCLUDE_FILE" ]; then
-              echo "Never to be updated by automation: $EXCLUDE_FILE"
+              # The exclusion file itself is never updated by automation
               return 1
-            elif [ ! -f "$EXCLUDE_FILE" ]; then
-              echo "No configuration file found: $EXCLUDE_FILE"
-              echo "All devops tooling will be imported/updated"
-            else
-              if (grep -Fxq "$ELEMENT" "$EXCLUDE_FILE"); then
-                # Element is excluded from processing
-                return 1
-              else
-                # Element should be processed
-                return 0
-              fi
+            elif (grep -Fxq "$ELEMENT" "$EXCLUDE_FILE"); then
+              # Element listed; exclude from processing
+              return 1
             fi
+            # No exclusion in place; process everything by default
+            return 0
           }
 
           # Determine if an existing automated PR is open
@@ -98,6 +93,18 @@ jobs:
               "41898282+github-actions[bot]@users.noreply.github.com"
           fi
 
+          # Code path below only used when run from a shell outside GitHub Actions
+          if [ ! -d "$DEVOPS_DIR" ]; then
+            DEVOPS_DIR=".devops"
+            printf "Cloning DevOps repository into: %s" $DEVOPS_DIR
+            if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
+                echo " [successful]"
+            else
+                echo " [failed]"; exit 1
+            fi
+          fi
+
+          # Process upstream DevOps repository content and update
           FOLDERS=".github .github/workflows scripts"
           for FOLDER in ${FOLDERS}; do
             # Check to see if operation should be skipped
