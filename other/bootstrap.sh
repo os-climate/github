@@ -7,7 +7,10 @@ set -eu -o pipefail
 
 ### Variables ###
 
-WGET_URL="https://raw.githubusercontent.com/os-climate/devops-toolkit/main/.github/workflows/bootstrap.yaml"
+SOURCE_FILE="bootstrap.yaml"
+WGET_URL="https://raw.githubusercontent.com/os-climate/devops-toolkit/main/.github/workflows/$SOURCE_FILE"
+AUTOMATION_BRANCH="update-devops-tooling"
+DEVOPS_DIR=".devops"
 
 ### Checks ###
 
@@ -43,18 +46,18 @@ cleanup_on_exit() {
     # Remove PR branch, if it exists
     echo "Swapping from temporary branch to: $HEAD_BRANCH"
     git checkout main > /dev/null 2>&1
-    if (check_for_local_branch "$PR_BRANCH"); then
-        echo "NOT removing temporary local branch during debugging: $PR_BRANCH"
-        # git branch -d "$PR_BRANCH" > /dev/null 2>&1
+    if (check_for_local_branch "$AUTOMATION_BRANCH"); then
+        echo "NOT removing temporary local branch during debugging: $AUTOMATION_BRANCH"
+        # git branch -d "$AUTOMATION_BRANCH" > /dev/null 2>&1
     fi
-    if [ -d "$DEVOPS_DIR" ]; then
-        rm -Rf "$DEVOPS_DIR"
-        echo "Removed temporary devops repository clone"
-    fi
-    if [ -f "$SHELL_SCRIPT" ]    ; then
+    if [ -f "$SHELL_SCRIPT" ]; then
         echo "NOT removing shell code during debugging"
         # rm "$SHELL_SCRIPT"
 
+    fi
+    if [ -d "$DEVOPS_DIR" ]; then
+        echo "Removed local copy of devops repository"
+        rm -Rf "$DEVOPS_DIR"
     fi
 }
 trap cleanup_on_exit EXIT
@@ -80,16 +83,16 @@ if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
     cd "$REPO_DIR" || change_dir_error
 fi
 
-if [ -f bootstrap.yaml ]; then
-    rm bootstrap.yaml
-    echo "Deleted pre-existing bootstrap.yaml file"
+if [ -f "$SOURCE_FILE" ]; then
+    rm "$SOURCE_FILE"
+    echo "Deleted pre-existing $SOURCE_FILE file"
 fi
 echo "Pulling latest DevOps bootstrap workflow from:"
 echo "  $WGET_URL"
 "$WGET_CMD" -q "$WGET_URL"
 
-# The section below extracts shell code from the bootstrap.yaml file
-echo "Extracting shell code from bootstrap.yaml file..."
+# The section below extracts shell code from the YAML file
+echo "Extracting shell code from: $SOURCE_FILE"
 EXTRACT="false"
 while read -r LINE; do
     if [ "$LINE" = "### SHELL CODE START ###" ]; then
@@ -107,7 +110,7 @@ while read -r LINE; do
             break
         fi
     fi
-done < bootstrap.yaml
+done < "$SOURCE_FILE"
 
 echo "Running extracted shell script code"
 "$SHELL_SCRIPT"
