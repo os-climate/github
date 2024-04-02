@@ -38,8 +38,11 @@ jobs:
         run: |
           ### SHELL CODE START ###
 
+          DEVOPS_DIR=".devops"
           AUTOMATION_BRANCH="update-devops-tooling"
           REPO_DIR=$(git rev-parse --show-toplevel)
+          EXCLUDE_FILE=".devops-exclusions"
+
           # Ensure working from top-level of GIT repository
           CURRENT_DIR=$(pwd)
           if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
@@ -50,7 +53,6 @@ jobs:
           fi
 
           # Define a function to allow selective opt-out of devops tooling
-          EXCLUDE_FILE=".devops-exclusions"
           perform_operation() {
             ELEMENT="$1"
             # Elements excluded from processing return exit status 1
@@ -68,21 +70,27 @@ jobs:
           # Determine if an existing automated PR is open
           echo "Checking if an existing automation PR is open"
           echo "Running: gh pr list --state open --author github-actions[bot]"
-          if ! (gh pr list --state open --author 'github-actions[bot]' | \
+          if (gh pr list --state open --author 'github-actions[bot]' | \
             grep 'no pull requests match your search in'); then
+            echo "No existing/open pull request found in repository"
+          else
           # Capture the existing PR number
           PR_NUM=$(gh pr list --state open -L 1 \
             --author 'github-actions[bot]' --json number | \
             grep "number" | sed "s/:/ /g" | awk '{print $2}' | \
             sed "s/}//g" | sed "s/]//g")
-          # Checkout the existing pull request
-          echo "An existing PR was found: $PR_NUM"
-          echo "Running: gh pr checkout $PR_NUM"
-          else
-            echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
-            git push origin --delete $AUTOMATION_BRANCH || :
-            git checkout -b "$AUTOMATION_BRANCH"
+            if [ -n "$PR_NUM" ]; then
+              echo "ERROR: The PR number could not be parsed"; exit 1
+            else
+              echo "Existing PR number is: $PR_NUM"
+            fi
+
+            # Checkout the existing pull request
+            echo "Running: gh pr checkout $PR_NUM"
           fi
+          echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
+          git push origin --delete $AUTOMATION_BRANCH || :
+          git checkout -b "$AUTOMATION_BRANCH"
 
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
@@ -95,7 +103,6 @@ jobs:
 
           # Code path below only used when run from a shell outside GitHub Actions
           if [ ! -d "$DEVOPS_DIR" ]; then
-            DEVOPS_DIR=".devops"
             printf "Cloning DevOps repository into: %s" $DEVOPS_DIR
             if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
                 echo " [successful]"
