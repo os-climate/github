@@ -7,14 +7,18 @@ set -eu -o pipefail
 
 ### Variables ###
 
-DEVOPS_REPO="git@github.com:os-climate/devops-toolkit.git"
-PR_BRANCH="update-devops-tooling"
+WGET_URL="https://raw.githubusercontent.com/os-climate/devops-toolkit/main/.github/workflows/bootstrap.yaml"
 
 ### Checks ###
 
 GIT_CMD=$(which git)
 if [ ! -x "$GIT_CMD" ]; then
-    echo "GIT command was not found in PATH"; exit 1
+    echo "GIT command was NOT found in PATH"; exit 1
+fi
+
+WGET_CMD=$(which wget)
+if [ ! -x "$WGET_CMD" ]; then
+    echo "WGET command was NOT found in PATH"; exit 1
 fi
 
 ### Functions ###
@@ -76,17 +80,16 @@ if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
     cd "$REPO_DIR" || change_dir_error
 fi
 
-# Directory used below MUST match code in bootstrap.yaml
-DEVOPS_DIR=".devops"
-printf "Cloning DevOps repository into: %s" $DEVOPS_DIR
-if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
-    echo " [successful]"
-else
-    echo " [failed]"; exit 1
+if [ -f bootstrap.yaml ]; then
+    rm bootstrap.yaml
+    echo "Deleted pre-existing bootstrap.yaml file"
 fi
+echo "Pulling latest DevOps bootstrap workflow from:"
+echo "  $WGET_URL"
+"$WGET_CMD" -q "$WGET_URL"
 
 # The section below extracts shell code from the bootstrap.yaml file
-echo "Extracting shell code from bootstrap.yaml file"
+echo "Extracting shell code from bootstrap.yaml file..."
 EXTRACT="false"
 while read -r LINE; do
     if [ "$LINE" = "### SHELL CODE START ###" ]; then
@@ -104,7 +107,7 @@ while read -r LINE; do
             break
         fi
     fi
-done < "$DEVOPS_DIR"/.github/workflows/bootstrap.yaml
+done < bootstrap.yaml
 
 echo "Running extracted shell script code"
-# "$SHELL_SCRIPT"
+"$SHELL_SCRIPT"
