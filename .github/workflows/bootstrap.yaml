@@ -73,6 +73,15 @@ jobs:
             fi
           }
 
+          selective_file_copy() {
+            FILE="$1"
+            if (perform_operation "$FILE"); then
+              echo "Copying: $FOLDER/$FILE into $FOLDER"
+              cp .devops/"$FOLDER"/"$FILE" "$FOLDER"/"$FILE"
+              git add "$FOLDER"/"$FILE"
+            fi
+          }
+
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
           TEST=$(git config -l > /dev/null 2>&1)
@@ -127,10 +136,7 @@ jobs:
               echo "Updating folder contents: $FOLDER"
               FILE_LIST=$(find .devops/"$FOLDER" -maxdepth 0 -type f)
               for FILE in $FILE_LIST; do
-                if (perform_operation "$FILE"); then
-                  echo "Copying: $FOLDER/$FILE into $FOLDER"
-                  cp .devops/"$FOLDER"/"$FILE" "$FOLDER"/"$FILE"
-                fi
+                selective_file_copy "$FOLDER"/"$FILE"
               done
             else
              echo "Opted out of folder: $FOLDER"
@@ -142,8 +148,7 @@ jobs:
           FILES=".pre-commit-config.yaml .prettierignore .gitignore .devops-exclusions"
           for FILE in ${FILES}; do
             if (perform_operation "$FILE"); then
-              echo "Copying file: $FILE"
-              cp .devops/"$FILE" "$FILE"
+                selective_file_copy "$FILE"
             else
               echo "Opted out of file: $FILE"
             fi
@@ -162,9 +167,7 @@ jobs:
           fi
 
           # The code below to create the PR is only called when running from a shell
-          echo "Changes require that a PR be raised"
-          git status
-          git add .
+          echo "Changes require that a PR be raised:"
           git status
           if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip-ci]" \
             -m "This commit created by automation/scripting" --no-verify); then
