@@ -59,16 +59,28 @@ jobs:
           perform_operation() {
             ELEMENT="$1"
             # Elements excluded from processing return exit status 1
-            if [ "$ELEMENT" = "$EXCLUDE_FILE" ]; then
+            if [ ! -f "$EXCLUDE_FILE" ]; then
+              return 0
+            elif [ "$ELEMENT" = "$EXCLUDE_FILE" ]; then
               # The exclusion file itself is never updated by automation
               return 1
             elif (grep -Fxq "$ELEMENT" "$EXCLUDE_FILE"); then
               # Element listed; exclude from processing
               return 1
+            else
+              # Element not found in exclusion file; process it
+              return 0
             fi
-            # No exclusion in place; process everything by default
-            return 0
           }
+
+          # Configure GIT environment only if NOT already configured
+          # i.e. when running in a GitHub Actions workflow
+          TEST=$(git config -l > /dev/null 2>&1)
+          if [ -n "$TEST" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email \
+              "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
 
           printf "Checking if an existing automation PR is open: "
           # Capture the existing PR number
@@ -78,25 +90,17 @@ jobs:
             sed "s/}//g" | sed "s/]//g")
           if [ -z "$PR_NUM" ]; then
             echo "[no]"
-            # No existing pull request is open
+            # No existing pull request is open for this repository
             echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
             git push origin --delete "$AUTOMATION_BRANCH" > /dev/null 2>&1 || :
-            echo "Creating local automation branch"
-            git branch -d "$AUTOMATION_BRANCH" || :
+            echo "Removing same branch locally if it exists"
+            git branch -D "$AUTOMATION_BRANCH" || :
+            echo "Creating clean local automation branch"
             git checkout -b "$AUTOMATION_BRANCH"
           else
             echo "[$PR_NUM]"
             echo "Running: gh pr checkout $PR_NUM"
             gh pr checkout "$PR_NUM"
-          fi
-
-          # Configure GIT environment only if NOT already configured
-          # i.e. when running in a GitHub Actions workflow
-          TEST=$(git config -l > /dev/null 2>&1)
-          if [ -n "$TEST" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email \
-              "41898282+github-actions[bot]@users.noreply.github.com"
           fi
 
           # Code path below only used when run from a shell outside GitHub Actions
@@ -123,8 +127,10 @@ jobs:
               echo "Updating folder contents: $FOLDER"
               FILE_LIST=$(find .devops/"$FOLDER" -maxdepth 0 -type f)
               for FILE in $FILE_LIST; do
-                echo "Copying: $FOLDER/$FILE into $FOLDER"
-                cp .devops/"$FOLDER"/"$FILE" "$FOLDER"
+                if (perform_operation "$FILE"); then
+                  echo "Copying: $FOLDER/$FILE into $FOLDER"
+                  cp .devops/"$FOLDER"/"$FILE" "$FOLDER"/"$FILE"
+                fi
               done
             else
              echo "Opted out of folder: $FOLDER"
