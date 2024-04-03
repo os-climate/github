@@ -24,6 +24,13 @@ if [ ! -x "$WGET_CMD" ]; then
     echo "WGET command was NOT found in PATH"; exit 1
 fi
 
+MKTEMP_CMD=$(which mktemp)
+if [ ! -x "$MKTEMP_CMD" ]; then
+    echo "MKTEMP command was NOT found in PATH"; exit 1
+fi
+
+SHELL_SCRIPT=$(mktemp -t script-XXXXXXXX.sh)
+
 ### Functions ###
 
 change_dir_error() {
@@ -83,13 +90,13 @@ if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
     cd "$REPO_DIR" || change_dir_error
 fi
 
-if [ -f "$SOURCE_FILE" ]; then
-    rm "$SOURCE_FILE"
-    echo "Deleted pre-existing $SOURCE_FILE file"
+if [ ! -f "$SOURCE_FILE" ]; then
+    echo "Pulling latest DevOps bootstrap workflow from:"
+    echo "  $WGET_URL"
+    "$WGET_CMD" -q "$WGET_URL"
+else
+    echo "Preserving local bootstrap.yaml during debugging/development"
 fi
-echo "Pulling latest DevOps bootstrap workflow from:"
-echo "  $WGET_URL"
-"$WGET_CMD" -q "$WGET_URL"
 
 # The section below extracts shell code from the YAML file
 echo "Extracting shell code from: $SOURCE_FILE"
@@ -106,7 +113,6 @@ while read -r LINE; do
     if [ "$EXTRACT" = "true" ]; then
         echo "$LINE" >> "$SHELL_SCRIPT"
         if [ "$LINE" = "### SHELL CODE END ###" ]; then
-            echo "Script extraction complete"
             break
         fi
     fi
