@@ -51,15 +51,16 @@ check_for_remote_branch() {
 
 cleanup_on_exit() {
     # Remove PR branch, if it exists
+    echo "Cleaning up on exit: bootstrap.sh"
     echo "Swapping from temporary branch to: $HEAD_BRANCH"
     git checkout main > /dev/null 2>&1
     if (check_for_local_branch "$AUTOMATION_BRANCH"); then
-        echo "NOT removing temporary local branch during debugging: $AUTOMATION_BRANCH"
-        # git branch -d "$AUTOMATION_BRANCH" > /dev/null 2>&1
+        echo "Removing temporary local branch: $AUTOMATION_BRANCH"
+        git branch -d "$AUTOMATION_BRANCH" > /dev/null 2>&1
     fi
     if [ -f "$SHELL_SCRIPT" ]; then
-        echo "NOT removing shell code during debugging"
-        # rm "$SHELL_SCRIPT"
+        echo "Removing temporary shell code"
+        rm "$SHELL_SCRIPT"
 
     fi
     if [ -d "$DEVOPS_DIR" ]; then
@@ -95,7 +96,8 @@ if [ ! -f "$SOURCE_FILE" ]; then
     echo "  $WGET_URL"
     "$WGET_CMD" -q "$WGET_URL"
 else
-    echo "Preserving local bootstrap.yaml during debugging/development"
+    echo "Note: NOT removing local bootstrap.yaml file"
+    echo "This is to aid during debugging/development"
 fi
 
 # The section below extracts shell code from the YAML file
@@ -119,4 +121,7 @@ while read -r LINE; do
 done < "$SOURCE_FILE"
 
 echo "Running extracted shell script code"
-"$SHELL_SCRIPT"
+# https://www.shellcheck.net/wiki/SC1090
+# Shell code executed is temporary and cannot be checked by linting
+# shellcheck disable=SC1090
+. "$SHELL_SCRIPT"
