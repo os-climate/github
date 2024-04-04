@@ -66,10 +66,6 @@ cleanup_on_exit() {
         echo "Removed local copy of devops repository"
         rm -Rf "$DEVOPS_DIR"
     fi
-    if [ -f "$SOURCE_FILE" ]; then
-        echo "Removing temporary bootstrap workflow: $SOURCE_FILE"
-        rm "$SOURCE_FILE"
-    fi
 }
 trap cleanup_on_exit EXIT
 
