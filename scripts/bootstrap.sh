@@ -61,11 +61,14 @@ cleanup_on_exit() {
     if [ -f "$SHELL_SCRIPT" ]; then
         echo "Removing temporary shell code"
         rm "$SHELL_SCRIPT"
-
     fi
     if [ -d "$DEVOPS_DIR" ]; then
         echo "Removed local copy of devops repository"
         rm -Rf "$DEVOPS_DIR"
+    fi
+    if [ -f "$SOURCE_FILE" ]; then
+        echo "Removing temporary bootstrap workflow: $SOURCE_FILE"
+        rm "$SOURCE_FILE"
     fi
 }
 trap cleanup_on_exit EXIT
