@@ -216,7 +216,7 @@ jobs:
           done
 
           # If no changes required, do not throw an error
-          if (git diff --exit-code --quiet); then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "No updates/changes to commit"; exit 0
           fi
 
