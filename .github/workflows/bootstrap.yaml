@@ -183,7 +183,7 @@ jobs:
           LOCATIONS=".pre-commit-config.yaml .prettierignore .gitignore .devops-exclusions"
 
           # Then process the contents of the following folders
-          FOLDERS=".github .github/workflows scripts"
+          FOLDERS=".github .github/workflows scripts scripts/git-bulk"
           for FOLDER in ${FOLDERS}; do
             # Check to see if this folder should be skipped
             if (perform_operation "$FOLDER"); then
