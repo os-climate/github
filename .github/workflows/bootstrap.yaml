@@ -87,7 +87,7 @@ jobs:
               grep "number" | sed "s/:/ /g" | awk '{print $2}' | \
               sed "s/}//g" | sed "s/]//g")
             if [ -z "$PR_NUM" ]; then
-              echo "  [none]"
+              echo " [none]"
               return 1
             else
               echo " [$PR_NUM]"
@@ -138,7 +138,7 @@ jobs:
           # Check if there are unstaged changes
           if ! (git diff --exit-code --quiet); then
             echo "Stashing unstaged changes in current repository"
-            git stash
+            git stash -q
           fi
 
           # Verify user is logged into GitHub
@@ -171,7 +171,7 @@ jobs:
           if [ ! -d "$DEVOPS_DIR" ]; then
             printf "Cloning DevOps repository into: %s" "$DEVOPS_DIR"
             if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
-                echo " [successful]"
+                echo " [success]"
             else
                 echo " [failed]"; exit 1
             fi
@@ -256,7 +256,7 @@ jobs:
             --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
           echo "Unstashing unstaged changes, if any exist"
-          git stash pop || :
+          git stash pop -q || :
           ### SHELL CODE END ###
 
       - name: Create Pull Request
