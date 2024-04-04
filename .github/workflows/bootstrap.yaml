@@ -217,7 +217,7 @@ jobs:
             if (perform_operation "$LOCATION"); then
               selective_file_copy "$LOCATION"
             else
-              echo "Opted out of file at: $LOCATION"
+              echo "Not updating: $LOCATION"
             fi
           done
 
