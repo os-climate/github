@@ -91,14 +91,14 @@ if [ "$REPO_DIR" != "$CURRENT_DIR" ]; then
     cd "$REPO_DIR" || change_dir_error
 fi
 
-if [ ! -f "$SOURCE_FILE" ]; then
-    echo "Pulling latest DevOps bootstrap workflow from:"
-    echo "  $WGET_URL"
-    "$WGET_CMD" -q "$WGET_URL"
-else
-    echo "Note: NOT removing local bootstrap.yaml file"
-    echo "This is to aid during debugging/development"
+# Get latest copy of bootstrap workflow
+if [ -f "$SOURCE_FILE" ]; then
+    echo "Removing existing copy of: $SOURCE_FILE"
+    rm "$SOURCE_FILE"
 fi
+echo "Pulling latest DevOps bootstrap workflow from:"
+echo "  $WGET_URL"
+"$WGET_CMD" -q "$WGET_URL"
 
 # The section below extracts shell code from the YAML file
 echo "Extracting shell code from: $SOURCE_FILE"
