@@ -72,9 +72,13 @@ jobs:
           selective_file_copy() {
             # Receives a single file path as argument
             if (perform_operation "$1"); then
-              echo "Copying: $1"
-              cp ".devops/$1" "$1"
-              git add "$1"
+              SHA_SRC=$(sha1sum $DEVOPS_DIR/"$1" | awk '{print $1}')
+              SHA_DST=$(sha1sum "$1" | awk '{print $1}')
+              if [ "$SHA_SRC" != "$SHA_DST" ]; then
+                echo "Copying: $1"
+                cp "$DEVOPS_DIR/$1" "$1"
+                git add "$1"
+              fi
             fi
           }
 
@@ -135,11 +139,12 @@ jobs:
               fi
           fi
 
+          # Stashing only used during development/testing
           # Check if there are unstaged changes
-          if ! (git diff --exit-code --quiet); then
-            echo "Stashing unstaged changes in current repository"
-            git stash -q
-          fi
+          # if ! (git diff --exit-code --quiet); then
+          #   echo "Stashing unstaged changes in current repository"
+          #   git stash -q
+          # fi
 
           # Verify user is logged into GitHub
           if (gh auth status); then
@@ -193,7 +198,7 @@ jobs:
                 mkdir "$FOLDER"
               fi
               # Add folder contents to list of file LOCATIONS
-              FILES=$(cd ".devops/$FOLDER"; find . -maxdepth 1 -type f -exec basename {} \;)
+              FILES=$(cd "$DEVOPS_DIR/$FOLDER"; find . -maxdepth 1 -type f -exec basename {} \;)
               for LOCATION in $FILES; do
                 # Also check if individual files in the folder are excluded
                 if (perform_operation "$FOLDER/$LOCATION"); then
@@ -255,8 +260,8 @@ jobs:
             "Chore: Pull DevOps tooling from upstream repository" \
             --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
-          echo "Unstashing unstaged changes, if any exist"
-          git stash pop -q || :
+          # echo "Unstashing unstaged changes, if any exist"
+          # git stash pop -q || :
           ### SHELL CODE END ###
 
       - name: Create Pull Request
