@@ -193,7 +193,7 @@ jobs:
                 mkdir "$FOLDER"
               fi
               # Add folder contents to list of file LOCATIONS
-              FILES=$(cd ".devops/$FOLDER"; find -- * -maxdepth 0 -type f)
+              FILES=$(cd ".devops/$FOLDER"; find . -maxdepth 1 -type f -exec basename {} \;)
               for LOCATION in $FILES; do
                 # Also check if individual files in the folder are excluded
                 if (perform_operation "$FOLDER/$LOCATION"); then
