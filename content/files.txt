@@ -1,5 +1,6 @@
 .devops-exclusions
 .flake8
 .gitignore
+.markdownlint.yaml
 .pre-commit-config.yaml
 .prettierignore
