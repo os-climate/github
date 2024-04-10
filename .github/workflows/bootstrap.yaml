@@ -44,6 +44,7 @@ jobs:
           REPO_DIR=$(git rev-parse --show-toplevel)
           EXCLUDE_FILE=".devops-exclusions"
           DEVOPS_REPO='git@github.com:os-climate/devops-toolkit.git'
+          HEAD_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
           # Content folder defines the files and folders to update
           FILES="$DEVOPS_DIR/content/files.txt"
@@ -255,10 +256,12 @@ jobs:
 
           # Next step is only performed if running as GitHub Action
           if [[ -n ${GH_TOKEN+x} ]]; then
-            # Script is running in a GitHub Acsions workflow
+            # Script is running in a GitHub actions workflow
             # Set outputs for use by the next actions/steps
+            # shellcheck disable=SC2129
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "branchname=$AUTOMATION_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "headbranch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
             # Move to the next workflow step to raise the PR
             exit 0
           fi
@@ -300,7 +303,7 @@ jobs:
           token: ${{ secrets.ACTIONS_WORKFLOW }}
           commit-message: "Chore: Update DevOps tooling from central repository [skip ci]"
           signoff: "true"
-          base: main
+          base: ${{ steps.update-repository.outputs.headbranch }}
           branch: ${{ steps.update-repository.outputs.branchname }}
           delete-branch: true
           title: "Chore: Update DevOps tooling from central repository [skip ci]"
