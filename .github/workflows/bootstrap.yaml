@@ -36,7 +36,7 @@ jobs:
           ### SHELL CODE START ###
 
           set -eu -o pipefail
-          set -x
+          # set -x
 
           # Define variables
 
