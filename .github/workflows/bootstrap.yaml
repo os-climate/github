@@ -35,7 +35,7 @@ jobs:
         run: |
           ### SHELL CODE START ###
 
-          set -eu -o pipefail
+          set -euo pipefail
           # set -x
 
           # Define variables
@@ -77,17 +77,15 @@ jobs:
             fi
           }
 
-          # Decides whether a file should be updated
+          # Only updates file if it has changed
           selective_file_copy() {
             # Receives a single file path as argument
-            if (perform_operation "$1"); then
-              SHA_SRC=$(sha1sum "$DEVOPS_DIR"/"$1" | awk '{print $1}')
-              SHA_DST=$(sha1sum "$1" 2>/dev/null | awk '{print $1}' || :)
-              if [ "$SHA_SRC" != "$SHA_DST" ]; then
-                echo "Copying: $1"
-                cp "$DEVOPS_DIR/$1" "$1"
-                git add "$1"
-              fi
+            SHA_SRC=$(sha1sum "$DEVOPS_DIR"/"$1" | awk '{print $1}')
+            SHA_DST=$(sha1sum "$1" 2>/dev/null | awk '{print $1}' || :)
+            if [ "$SHA_SRC" != "$SHA_DST" ]; then
+              echo "Copying: $1"
+              cp "$DEVOPS_DIR/$1" "$1"
+              git add "$1"
             fi
           }
 
@@ -174,9 +172,10 @@ jobs:
             echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
             git push origin --delete "$AUTOMATION_BRANCH" > /dev/null 2>&1 || :
             git branch -D "$AUTOMATION_BRANCH" || :
-            echo "Creating local branch for automated update"
-            git checkout -b "$AUTOMATION_BRANCH"
           fi
+
+          echo "Creating local branch for automated update"
+          git checkout -b "$AUTOMATION_BRANCH"
 
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
@@ -274,7 +273,7 @@ jobs:
           # If running shell code locally, continue to raise the PR
 
           # Reinstate exit on unbound variables
-          set -eu -o pipefail
+          set -euxo pipefail
 
           git status
           if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip ci]" \
@@ -283,13 +282,8 @@ jobs:
           else
             # Push branch to remote repository
             git push --set-upstream origin "$AUTOMATION_BRANCH"
-
-            # ToDo: need to verify if we are running in a GHA
-            # gh pr create --head ModeSevenIndustrialSolutions/test-bootstrap --title \
-            #  "Chore: Pull DevOps tooling from upstream repository" \
-            #  --body 'Automated by a GitHub workflow: bootstrap.yaml'
-
-            gh pr create --head "$AUTOMATION_BRANCH" \
+            # Create PR request
+            gh pr create \
              --title "Chore: Pull DevOps tooling from upstream repository" \
             --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
