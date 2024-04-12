@@ -43,6 +43,8 @@ jobs:
           DEVOPS_DIR=".devops"
           AUTOMATION_BRANCH="update-devops-tooling"
           REPO_DIR=$(git rev-parse --show-toplevel)
+          GIT_ORIGIN=$(git config --get remote.origin.url)
+          REPO_NAME=$(basename -s .git "$GIT_ORIGIN")
           EXCLUDE_FILE=".devops-exclusions"
           DEVOPS_REPO='git@github.com:os-climate/devops-toolkit.git'
           HEAD_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -79,7 +81,7 @@ jobs:
           selective_file_copy() {
             # Receives a single file path as argument
             if (perform_operation "$1"); then
-              SHA_SRC=$(sha1sum $DEVOPS_DIR/"$1" | awk '{print $1}')
+              SHA_SRC=$(sha1sum "$DEVOPS_DIR"/"$1" | awk '{print $1}')
               SHA_DST=$(sha1sum "$1" 2>/dev/null | awk '{print $1}' || :)
               if [ "$SHA_SRC" != "$SHA_DST" ]; then
                 echo "Copying: $1"
@@ -141,7 +143,7 @@ jobs:
 
           # Main script entry point
 
-          echo "HEAD branch detected as: $HEAD_BRANCH"
+          echo "Repository name and HEAD branch: $REPO_NAME [$HEAD_BRANCH]"
 
           # Ensure working from top-level of GIT repository
           CURRENT_DIR=$(pwd)
@@ -287,9 +289,8 @@ jobs:
             #  "Chore: Pull DevOps tooling from upstream repository" \
             #  --body 'Automated by a GitHub workflow: bootstrap.yaml'
 
-            gh pr create --repo ModeSevenIndustrialSolutions/test-bootstrap \
-            --head "$AUTOMATION_BRANCH" --title \
-            "Chore: Pull DevOps tooling from upstream repository" \
+            gh pr create --head "$AUTOMATION_BRANCH" \
+             --title "Chore: Pull DevOps tooling from upstream repository" \
             --body 'Automated by a GitHub workflow: bootstrap.yaml'
           fi
           # echo "Unstashing unstaged changes, if any exist"
