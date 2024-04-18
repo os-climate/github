@@ -55,11 +55,22 @@ jobs:
 
           # Define functions
 
+          perform_folder_operation() {
+            FS_PATH="$1"
+            if [ -d "$DEVOPS_DIR"/"$FS_PATH" ]; then
+              echo "Scanning target folder content at: $FS_PATH"
+              return 0
+            else
+              echo "Upstream folder NOT found: $FS_PATH [skipping]"
+              return 1
+            fi
+          }
+
           # Allows for selective opt-out components on a per-path basis
           perform_operation() {
             FS_PATH="$1"
-            if [ ! -f "$FS_PATH" ] && [ ! -d "$FS_PATH" ]; then
-              echo "Skipping missing upstream element at: $FS_PATH"
+            if [ ! -f "$DEVOPS_DIR"/"$FS_PATH" ]; then
+              echo "Skipping missing upstream file at: $FS_PATH"
               return 1
             fi
             # Elements excluded from processing return exit status 1
@@ -189,7 +200,7 @@ jobs:
             echo "Creating local branch for automated update"
             git checkout -b "$AUTOMATION_BRANCH"
           else
-            echo "Swapping to branch for automated update: $AUTOMATION_BRANCH"
+            # The -B flag swaps branch and creates it if NOT present
             git checkout -B "$AUTOMATION_BRANCH"
           fi
 
@@ -236,7 +247,7 @@ jobs:
             for FOLDER in "${LINE[@]}";
             do
               # Check to see if this folder should be skipped
-              if (perform_operation "$FOLDER"); then
+              if (perform_folder_operation "$FOLDER"); then
                 # If necessary, create target folder
                 if [ ! -d "$FOLDER" ]; then
                   echo "Creating target folder: $FOLDER"
