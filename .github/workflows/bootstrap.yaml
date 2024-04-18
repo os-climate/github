@@ -148,6 +148,7 @@ jobs:
                 echo "Failed to checkout pull request"; exit 1
               fi
             done
+            return 1
           }
 
           # Check if script is running in GHA workflow
@@ -192,18 +193,6 @@ jobs:
           #   git stash -q
           # fi
 
-          if ! (check_prs); then
-            # No existing open pull requests found for this repository
-            echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
-            git push origin --delete "$AUTOMATION_BRANCH" > /dev/null 2>&1 || :
-            git branch -D "$AUTOMATION_BRANCH" || :
-            echo "Creating local branch for automated update"
-            git checkout -b "$AUTOMATION_BRANCH"
-          else
-            # The -B flag swaps branch and creates it if NOT present
-            git checkout -B "$AUTOMATION_BRANCH"
-          fi
-
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
           TEST=$(git config -l > /dev/null 2>&1)
@@ -213,6 +202,19 @@ jobs:
               "41898282+github-actions[bot]@users.noreply.github.com"
           fi
 
+
+          if ! (check_prs); then
+            # No existing open pull requests found for this repository
+
+            # Remove remote branch if it exists
+            git push origin --delete "$AUTOMATION_BRANCH" > /dev/null 2>&1 || :
+            git branch -D "$AUTOMATION_BRANCH" || :
+            git checkout -b "$AUTOMATION_BRANCH"
+          else
+            # The -B flag swaps branch and creates it if NOT present
+            git checkout -B "$AUTOMATION_BRANCH"
+          fi
+
           # Only if NOT running in GitHub
           # (checkout is otherwise performed by earlier steps)
           if ! (in_github); then
@@ -220,7 +222,6 @@ jobs:
             if [ -d "$DEVOPS_DIR" ]; then
               rm -Rf "$DEVOPS_DIR"
             fi
-
             printf "Cloning DevOps repository into: %s" "$DEVOPS_DIR"
             if (git clone "$DEVOPS_REPO" "$DEVOPS_DIR" > /dev/null 2>&1); then
                 echo " [success]"
