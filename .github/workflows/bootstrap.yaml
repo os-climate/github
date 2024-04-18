@@ -113,7 +113,7 @@ jobs:
             fi
           }
 
-          check_authors() {
+          check_prs() {
             # Define users to check for pre-existing pull requests
             AUTOMATION_USER="github-actions[bot]"
             if [[ -n ${GH_TOKEN+x} ]]; then
@@ -139,6 +139,28 @@ jobs:
             done
           }
 
+          # Check if script is running in GHA workflow
+          in_github() {
+            if [ -z ${GITHUB_RUN_ID+x} ]; then
+              echo "Script is NOT running in GitHub"
+              return 1
+            else
+              echo "Script is running in GitHub"
+              return 0
+            fi
+          }
+
+          # Check if user is logged into GitHub
+          logged_in_github() {
+            if (gh auth status); then
+              echo "Logged in and authenticated to GitHb"
+              return 0
+            else
+              echo "Not logged into GitHub, some script operations unavailable"
+              return 1
+            fi
+          }
+
           # Main script entry point
 
           echo "Repository name and HEAD branch: $REPO_NAME [$HEAD_BRANCH]"
@@ -159,23 +181,17 @@ jobs:
           #   git stash -q
           # fi
 
-          # Verify user is logged into GitHub
-          if (gh auth status); then
-            GH_AUTH="true"
-          else
-            echo "Not logged into GitHub, some script operations unavailable"
-            GH_AUTH="false"
-          fi
-
-          if [ "$GH_AUTH" = "true" ] && ! (check_authors); then
+          if ! (check_prs); then
             # No existing open pull requests found for this repository
             echo "Removing remote branch if it exists: $AUTOMATION_BRANCH"
             git push origin --delete "$AUTOMATION_BRANCH" > /dev/null 2>&1 || :
             git branch -D "$AUTOMATION_BRANCH" || :
+            echo "Creating local branch for automated update"
+            git checkout -b "$AUTOMATION_BRANCH"
+          else
+            echo "Swapping to branch for automated update: $AUTOMATION_BRANCH"
+            git checkout -B "$AUTOMATION_BRANCH"
           fi
-
-          echo "Creating local branch for automated update"
-          git checkout -b "$AUTOMATION_BRANCH"
 
           # Configure GIT environment only if NOT already configured
           # i.e. when running in a GitHub Actions workflow
@@ -188,7 +204,7 @@ jobs:
 
           # Only if NOT running in GitHub
           # (checkout is otherwise performed by earlier steps)
-          if [ -z ${GITHUB_RUN_ID+x} ]; then
+          if ! (in_github); then
             # Remove any stale local copy of the upstream repository
             if [ -d "$DEVOPS_DIR" ]; then
               rm -Rf "$DEVOPS_DIR"
@@ -273,7 +289,7 @@ jobs:
           # If running shell code locally, continue to raise the PR
 
           # Reinstate exit on unbound variables
-          set -euxo pipefail
+          set -euo pipefail
 
           git status
           if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip ci]" \
