@@ -114,6 +114,12 @@ repos:
     hooks:
       - id: flake8
 
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [ "-d", "{rules: {line-length: {max: 120}}, ignore-from-file: [.gitignore],}", ]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.10.0"
     hooks:
@@ -121,12 +127,6 @@ repos:
         verbose: true
         args: [--show-error-codes]
         additional_dependencies: ["pytest", "types-requests"]
-
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        args: [ "-d", "{rules: {line-length: {max: 120}}, ignore-from-file: [.gitignore],}", ]
 
   # Check for misspellings in documentation files
   # - repo: https://github.com/codespell-project/codespell
