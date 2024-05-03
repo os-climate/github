@@ -51,7 +51,7 @@ jobs:
           pip install pytest nbmake
 
       - name: "Test notebooks: pytest --nbmake"
-        run: find notebooks/ -type f -name "*.ipynb" -exec pytest --nbmake {} \;
+        run: pytest --nbmake -- **/*ipynb
 
       - name: Upload logs as artefacts
         if: always()
