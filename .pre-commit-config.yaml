@@ -128,6 +128,15 @@ repos:
         args: [--show-error-codes]
         additional_dependencies: ["pytest", "types-requests"]
 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 5559d0350deec43675eef448015296e1d79800bd  # frozen: v0.4.3
+    hooks:
+      - id: ruff
+        files: ^(scripts|tests|custom_components)/.+\.py$
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        files: ^(scripts|tests|custom_components)/.+\.py$
+
   # Check for misspellings in documentation files
   # - repo: https://github.com/codespell-project/codespell
   #   rev: v2.2.2
