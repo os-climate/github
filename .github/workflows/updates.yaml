@@ -1,0 +1,177 @@
+---
+name: "♻️ Update shared DevOps tooling"
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_dispatch:
+
+jobs:
+  update-actions:
+    name: "Update DevOps tooling"
+    runs-on: ubuntu-latest
+    permissions:
+      # IMPORTANT: mandatory to create or update content/actions/pr
+      contents: write
+      actions: write
+      pull-requests: write
+
+    steps:
+      - name: "Checkout primary repository"
+        uses: actions/checkout@v4
+
+      - name: "Pull devops content from repository"
+        uses: actions/checkout@v4
+        with:
+          repository: "os-climate/devops-toolkit"
+          path: ".devops"
+
+      - name: "Update reusable workflow commit/versions"
+        id: update-commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # yamllint disable rule:line-length
+        run: |
+          #SHELLCODESTART
+          set -euo pipefail
+          # set -xv
+
+          # Define variables
+
+          PARALLEL_THREADS="1"
+
+          AUTOMATION_BRANCH="update-workflows"
+          UPDATE_FILE=".github/workflows/update.txt"
+          EXCLUDE_FILE=".github/workflows/exclude.txt"
+          HEAD_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          DATE=$(date '+%Y-%m-%d')
+
+          # Define arrays
+
+          declare -a WORKFLOWS_ARRAY UPDATE_ARRAY
+
+          # Define functions
+
+          auth_check() {
+              if ! ("$GITHUB_CLI" auth status > /dev/null ); then
+                  echo "You are not logged into GitHub"
+                  echo "Use the command:  gh auth login"
+                  echo "...then try this script again"; exit 1
+              fi
+          }
+
+          check_arg_in_array() {
+              # https://stackoverflow.com/questions/3685970/check-if-a-bash-array-contains-a-value
+              # check_arg_in_array "$needle" "${haystack[@]}"
+              local a b;
+              # shellcheck disable=SC2182
+              printf -va '\n%q\n' "$1";
+              # shellcheck disable=SC2182
+              printf -vb '%q\n' "${@:2}";
+              case $'\n'"$b" in (*"$a"*) return 0;; esac;
+              return 1;
+          }
+
+          # Checks
+
+          GITHUB_CLI=$(which gh)
+          if [ ! -x "$GITHUB_CLI" ]; then
+              echo "The GitHub CLI was NOT found in your PATH"; exit 1
+          else
+              export GITHUB_CLI
+          fi
+
+          PARALLEL_CMD=$(which parallel)
+          if [ ! -x "$PARALLEL_CMD" ]; then
+              echo "The GNU parallel command was NOT found in your PATH"
+              echo "On macOS you can install with homebrew using:"
+              echo "  brew install parallel"; exit 1
+          else
+              export PARALLEL_CMD
+          fi
+
+          # Main script entry point
+
+          # Make sure we are logged into GitHub
+          auth_check
+
+          # Populate array of local github workflow filenames
+          mapfile -t WORKFLOWS_ARRAY < <(ls .github/workflows | xargs basename)
+
+          # Code path if no update/exclude files present
+          if [ ! -f "$UPDATE_FILE" ] && [ ! -f "$EXCLUDE_FILE" ]; then
+
+          # Code path if update files is present
+          elif [ -f "$UPDATE_FILE" ]; then
+
+          # Code path if exclusion file is present
+          elif [ -f "$EXCLUDE_FILE" ]; then
+
+          fi
+
+          #SHELLCODEEND
+
+          ###############################################################
+
+          # If no changes required, do not throw an error
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No updates/changes to commit"; exit 0
+          fi
+
+          # Temporarily disable exit on unbound variable
+          set +eu +o pipefail
+
+          # Next step is only performed if running as GitHub Action
+          if [[ -n ${GH_TOKEN+x} ]]; then
+            # Script is running in a GitHub actions workflow
+            # Set outputs for use by the next actions/steps
+            # shellcheck disable=SC2129
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "branchname=$AUTOMATION_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "headbranch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+            # Move to the next workflow step to raise the PR
+            git push --set-upstream origin "$AUTOMATION_BRANCH"
+            exit 0
+          fi
+
+          # If running shell code locally, continue to raise the PR
+
+          # Reinstate exit on unbound variables
+          set -euo pipefail
+
+          git status
+          if ! (git commit -as -S -m "Chore: Update DevOps tooling from central repository [skip ci]" \
+            -m "This commit created by automation/scripting" --no-verify); then
+            echo "Commit failed; aborting"; exit 1
+          else
+            # Push branch to remote repository
+            git push --set-upstream origin "$AUTOMATION_BRANCH"
+            # Create PR request
+            gh pr create \
+             --title "Chore: Pull DevOps tooling from upstream repository" \
+            --body 'Automated by a GitHub workflow: bootstrap.yaml'
+          fi
+          # echo "Unstashing unstaged changes, if any exist"
+          # git stash pop -q || :
+
+          #SHELLCODEEND
+
+
+      - name: Create Pull Request
+        if: steps.update-repository.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        # env:
+        #   GITHUB_TOKEN: ${{ github.token }}
+        with:
+          # Note: Requires a specific/defined Personal Access Token
+          token: ${{ secrets.ACTIONS_WORKFLOW }}
+          commit-message: "Chore: Update DevOps tooling from central repository [skip ci]"
+          signoff: "true"
+          base: ${{ steps.update-repository.outputs.headbranch }}
+          branch: ${{ steps.update-repository.outputs.branchname }}
+          delete-branch: true
+          title: "Chore: Update DevOps tooling from central repository [skip ci]"
+          body: |
+            Update repository with content from upstream: os-climate/devops-toolkit
+          labels: |
+            automated pr
+          draft: false
