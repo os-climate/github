@@ -19,7 +19,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     commit-message:
-    prefix: "[dependabot] Chore:"
+      prefix: "[dependabot] Chore:"
     open-pull-requests-limit: 3
     schedule:
       interval: "weekly"
