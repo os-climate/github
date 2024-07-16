@@ -15,6 +15,7 @@ env:
 
 jobs:
   get-python-versions:
+    name: "Validate Python project"
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.parse-project-metadata.outputs.python-matrix-versions }}
@@ -22,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: "Populate environment variables"
+      - name: "Parse: pyproject.toml"
         id: parse-project-metadata
         # yamllint disable-line rule:line-length
         uses: os-climate/devops-reusable-workflows/.github/actions/python-versions-matrix@main
