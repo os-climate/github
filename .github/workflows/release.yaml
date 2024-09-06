@@ -44,7 +44,7 @@ jobs:
       - name: "Fetch current semantic tag"
         id: fetch-tags
         # yamllint disable-line rule:line-length
-        uses: os-climate/devops-reusable-workflows/.github/actions/latest-semantic-tag@main
+        uses: os-climate/osc-github-devops/.github/actions/latest-semantic-tag@main
 
       - name: "Update version from tags for production release"
         run: |
